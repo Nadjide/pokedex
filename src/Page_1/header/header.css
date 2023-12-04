@@ -1,0 +1,14 @@
+.Header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: black;
+  }
+  
+  .logo {
+    height: 50px;
+  }
+  
+  .language-select {
+    margin-right: 10px;
+  }
