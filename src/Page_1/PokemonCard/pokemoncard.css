@@ -1,20 +1,25 @@
 .pokemon-card {
     border: 1px solid #000000;
-    border-radius: 10px;
+    border-radius: 2px;
     padding: 20px;
     margin: 20px;
     background-color: #f9f9f9;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    width: 200px;
+    height: 200px;
 }
 
 .pokemon-types {
     display: flex;
     gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
 .pokemon-type {
     padding: 5px;
     border-radius: 5px;
-    background-color: #0defef;
-    color: #000;
+    text-transform: capitalize;
+    text-align: center;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }

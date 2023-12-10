@@ -1,0 +1,206 @@
+{
+  "normal": {
+    "backgroundColor": "#A8A77A",
+    "translations": {
+      "ja": "ノーマル",
+      "ko": "노말",
+      "fr": "Normal",
+      "de": "Normal",
+      "es": "Normal",
+      "it": "Normale",
+      "en": "Normal"
+    }
+  },
+  "fighting": {
+    "backgroundColor": "#C22E28",
+    "translations": {
+      "ja": "かくとう",
+      "ko": "격투",
+      "fr": "Combat",
+      "de": "Kampf",
+      "es": "Lucha",
+      "it": "Lotta",
+      "en": "Fighting"
+    }
+  },
+  "flying": {
+    "backgroundColor": "#A98FF3",
+    "translations": {
+      "ja": "ひこう",
+      "ko": "비행",
+      "fr": "Vol",
+      "de": "Flug",
+      "es": "Volador",
+      "it": "Volante",
+      "en": "Flying"
+    }
+  },
+  "poison": {
+    "backgroundColor": "#A33EA1",
+    "translations": {
+      "ja": "どく",
+      "ko": "독",
+      "fr": "Poison",
+      "de": "Gift",
+      "es": "Veneno",
+      "it": "Veleno",
+      "en": "Poison"
+    }
+  },
+  "ground": {
+    "backgroundColor": "#E2BF65",
+    "translations": {
+      "ja": "じめん",
+      "ko": "땅",
+      "fr": "Sol",
+      "de": "Boden",
+      "es": "Tierra",
+      "it": "Terra",
+      "en": "Ground"
+    }
+  },
+  "rock": {
+    "backgroundColor": "#B6A136",
+    "translations": {
+      "ja": "いわ",
+      "ko": "바위",
+      "fr": "Roche",
+      "de": "Gestein",
+      "es": "Roca",
+      "it": "Roccia",
+      "en": "Rock"
+    }
+  },
+  "bug": {
+    "backgroundColor": "#A6B91A",
+    "translations": {
+      "ja": "むし",
+      "ko": "벌레",
+      "fr": "Insecte",
+      "de": "Käfer",
+      "es": "Bicho",
+      "it": "Coleottero",
+      "en": "Bug"
+    }
+  },
+  "ghost": {
+    "backgroundColor": "#735797",
+    "translations": {
+      "ja": "ゴースト",
+      "ko": "고스트",
+      "fr": "Spectre",
+      "de": "Geist",
+      "es": "Fantasma",
+      "it": "Spettro",
+      "en": "Ghost"
+    }
+  },
+  "steel": {
+    "backgroundColor": "#B7B7CE",
+    "translations": {
+      "ja": "はがね",
+      "ko": "강철",
+      "fr": "Acier",
+      "de": "Stahl",
+      "es": "Acero",
+      "it": "Acciaio",
+      "en": "Steel"
+    }
+  },
+  "fire": {
+    "backgroundColor": "#EE8130",
+    "translations": {
+      "ja": "ほのお",
+      "ko": "불꽃",
+      "fr": "Feu",
+      "de": "Feuer",
+      "es": "Fuego",
+      "it": "Fuoco",
+      "en": "Fire"
+    }
+  },
+  "water": {
+    "backgroundColor": "#6390F0",
+    "translations": {
+      "ja": "みず",
+      "ko": "물",
+      "fr": "Eau",
+      "de": "Wasser",
+      "es": "Agua",
+      "it": "Acqua",
+      "en": "Water"
+    }
+  },
+  "grass": {
+    "backgroundColor": "#7AC74C",
+    "translations": {
+      "ja": "くさ",
+      "ko": "풀",
+      "fr": "Plante",
+      "de": "Pflanze",
+      "es": "Planta",
+      "it": "Erba",
+      "en": "Grass"
+    }
+  },
+  "electric": {
+    "backgroundColor": "#F7D02C",
+    "translations": {
+      "ja": "でんき",
+      "ko": "전기",
+      "fr": "Électrik",
+      "de": "Elektro",
+      "es": "Eléctrico",
+      "it": "Elettro",
+      "en": "Electric"
+    }
+  },
+  "psychic": {
+    "backgroundColor": "#F95587",
+    "translations": {
+      "ja": "エスパー",
+      "ko": "에스퍼",
+      "fr": "Psy",
+      "de": "Psycho",
+      "es": "Psíquico",
+      "it": "Psico",
+      "en": "Psychic"
+    }
+  },
+  "ice": {
+    "backgroundColor": "#96D9D6",
+    "translations": {
+      "ja": "こおり",
+      "ko": "얼음",
+      "fr": "Glace",
+      "de": "Eis",
+      "es": "Hielo",
+      "it": "Ghiaccio",
+      "en": "Ice"
+    }
+  },
+  "dragon": {
+    "backgroundColor": "#6F35FC",
+    "translations": {
+      "ja": "ドラゴン",
+      "ko": "드래곤",
+      "fr": "Dragon",
+      "de": "Drache",
+      "es": "Dragón",
+      "it": "Drago",
+      "en": "Dragon"
+    }
+  },
+  "fairy": {
+    "backgroundColor": "#D685AD",
+    "translations": {
+      "ja": "フェアリー",
+      "ko": "페어리",
+      "fr": "Fée",
+      "de": "Fee",
+      "es": "Hada",
+      "it": "Folletto",
+      "en": "Fairy"
+    }
+  }
+}
