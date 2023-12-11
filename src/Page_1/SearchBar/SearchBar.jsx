@@ -1,5 +1,5 @@
 import React from 'react';
-import './SearchBar.css'; // replace with the path to your CSS file
+import './SearchBar.css';
 
 export default function SearchBar({ setSearchTerm }) {
   return (
