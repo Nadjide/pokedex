@@ -17,7 +17,7 @@ export default function PokemonDetail() {
     }, [id]);
   
     if (!pokemon) {
-      return <div>Loading...</div>;
+      return <div>chargement...</div>;
     }
   
     return (

@@ -9,19 +9,16 @@
     height: 200px;
 }
 
-.pokemon-types {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-
 .pokemon-type {
     padding: 5px;
     border-radius: 5px;
     text-transform: capitalize;
     text-align: center;
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
 .link {
