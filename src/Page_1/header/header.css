@@ -11,4 +11,9 @@
   
   .language-select {
     margin-right: 10px;
+    background-color: #282c34;
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    cursor: pointer;
   }
