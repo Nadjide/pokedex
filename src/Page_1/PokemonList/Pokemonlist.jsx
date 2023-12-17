@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Box, Select, MenuItem } from '@mui/material';
 import SearchBar from '../SearchBar/SearchBar';
 import PokemonCard from '../PokemonCard/PokemonCard';
@@ -10,6 +10,12 @@ export default function PokemonList() {
   const { language } = useContext(LanguageContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [favorites, setFavorites] = useState([]);
+
+  useEffect(() => {
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    setFavorites(storedFavorites);
+  }, []);
 
   const uniqueTypes = Array.from(new Set(pokemonData.flatMap(pokemon => pokemon.types)));
 
@@ -19,6 +25,20 @@ export default function PokemonList() {
     )
     .filter(pokemon => {
       return typeFilter ? pokemon.types.includes(typeFilter) : true;
+    })
+    .sort((a, b) => {
+      const aIsFavorite = favorites.includes(a.id);
+      const bIsFavorite = favorites.includes(b.id);
+
+      if (aIsFavorite && !bIsFavorite) {
+        return -1;
+      }
+
+      if (bIsFavorite && !aIsFavorite) {
+        return 1;
+      }
+
+      return 0;
     });
 
   return (
@@ -51,9 +71,10 @@ export default function PokemonList() {
           borderRadius: '4px',
           cursor: 'pointer',
           padding: '3px',
+          height: '50px', 
         }}
       >
-        <MenuItem value="" style={{ opacity: 0.7 }}>{types.normal.translations[language] || "All"}</MenuItem>
+        <MenuItem value="" style={{ opacity: 0.7 }}>{types.normal.translations[language] || "Tous"}</MenuItem>
         {uniqueTypes.map(type => (
           <MenuItem key={type} value={type}>
             {types[type].translations[language]}
