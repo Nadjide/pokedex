@@ -1,10 +1,10 @@
-import React, { useState, useContext } from 'react';
-import './pokemonlist.css';
-import PokemonCard from '../PokemonCard/PokemonCard.jsx';
-import pokemonData from './pokemons.json';
+import React, { useContext, useState } from 'react';
+import { Box, Select, MenuItem } from '@mui/material';
 import SearchBar from '../SearchBar/SearchBar';
-import { LanguageContext } from '../../Langue/LanguageContext';
+import PokemonCard from '../PokemonCard/PokemonCard';
+import pokemonData from './pokemons.json';
 import types from './types.json';
+import { LanguageContext } from '../../Langue/LanguageContext';
 
 export default function PokemonList() {
   const { language } = useContext(LanguageContext);
@@ -22,19 +22,47 @@ export default function PokemonList() {
     });
 
   return (
-    <div className="pokemonlist">
+    <Box sx={{
+      display: 'flex',
+      flexFlow: 'row wrap',
+      margin: '0 auto',
+      maxWidth: '1200px',
+      padding: '20px',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
       <SearchBar setSearchTerm={setSearchTerm} />
-      <select className='typeSelect' value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-        <option value="">{types.normal.translations[language]}</option>
+      <Select
+        value={typeFilter}
+        displayEmpty
+        onChange={e => setTypeFilter(e.target.value)}
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          width: '100%',
+          margin: '20px 0',
+          marginTop: '10px',
+          backgroundColor: '#282c34',
+          border: '1px solid #ffffff',
+          color: 'white',
+          textAlign: 'center',
+          textDecoration: 'none',
+          fontSize: '16px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          padding: '3px',
+        }}
+      >
+        <MenuItem value="" style={{ opacity: 0.7 }}>{types.normal.translations[language] || "All"}</MenuItem>
         {uniqueTypes.map(type => (
-          <option key={type} value={type}>
+          <MenuItem key={type} value={type}>
             {types[type].translations[language]}
-          </option>
+          </MenuItem>
         ))}
-      </select>
+      </Select>
       {filteredPokemons.map(pokemon => (
         <PokemonCard key={pokemon.id} pokemon={pokemon} />
       ))}
-    </div>
+    </Box>
   );
 }
