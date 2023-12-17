@@ -1,63 +1,83 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { Card, CardContent, Typography, Chip, Rating, IconButton } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import typesData from '../PokemonList/types.json';
-import { LanguageContext } from '../../Langue/LanguageContext';
+import React, { useContext, useState, useEffect } from 'react'
+import { Link as RouterLink } from 'react-router-dom'
+import { Card, CardContent, Typography, Chip, Rating, IconButton } from '@mui/material'
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import typesData from '../PokemonList/types.json'
+import { LanguageContext } from '../../Langue/LanguageContext'
+import { FavoritesContext } from '../../FavoritesContext'
+import { CircularProgress } from '@mui/material'
 
 export default function PokemonCard({ pokemon }) {
-  const { language } = useContext(LanguageContext);
-  const [rating, setRating] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { language } = useContext(LanguageContext)
+  const [rating, setRating] = useState(0)
+  const { favorites, setFavorites } = useContext(FavoritesContext)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const storedRating = localStorage.getItem(`rating-${pokemon.id}`);
+    setIsLoading(true)
+    const storedRating = localStorage.getItem(`rating-${pokemon.id}`)
     if (storedRating) {
-      setRating(Number(storedRating));
+      setRating(Number(storedRating))
     }
 
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    setIsFavorite(storedFavorites.includes(pokemon.id));
-  }, [pokemon.id]);
+    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || []
+    setIsFavorite(storedFavorites.includes(pokemon.id))
+    setIsLoading(false)
+  }, [pokemon.id])
 
   const handleRatingChange = (event, newValue) => {
-    event.stopPropagation();
-    setRating(newValue);
-    localStorage.setItem(`rating-${pokemon.id}`, newValue);
-  };
+    event.stopPropagation()
+    const numericValue = Number(newValue)
+    setRating(numericValue)
+  }
 
   const handleFavoriteClick = () => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
     if (isFavorite) {
-      const newFavorites = storedFavorites.filter(id => id !== pokemon.id);
-      localStorage.setItem('favorites', JSON.stringify(newFavorites));
+      const newFavorites = favorites.filter((id) => id !== pokemon.id)
+      setFavorites(newFavorites)
+      setIsFavorite(false)
     } else {
-      storedFavorites.push(pokemon.id);
-      localStorage.setItem('favorites', JSON.stringify(storedFavorites));
+      const newFavorites = [...favorites, pokemon.id]
+      setFavorites(newFavorites)
+      setIsFavorite(true)
     }
-    setIsFavorite(!isFavorite);
-  };
+  }
+
+  useEffect(() => {
+    localStorage.setItem(`rating-${pokemon.id}`, rating)
+  }, [pokemon.id, rating])
+
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites))
+  }, [favorites])
 
   const LinkBehavior = React.forwardRef((props, ref) => (
     <RouterLink ref={ref} to={`/pokemon/${pokemon.id}`} {...props} />
-  ));
+  ))
+
+  if (isLoading) {
+    return <CircularProgress />
+  }
 
   return (
-    <Card sx={{
-      position: 'relative',
-      border: '1px solid #000000',
-      borderRadius: '2px',
-      padding: '20px',
-      margin: '20px',
-      backgroundColor: '#f9f9f9',
-      boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-      width: '200px',
-      height: '200px',
-      '&:hover': {
-        textDecoration: 'none',
-      },
-    }}>
+    <Card
+      sx={{
+        position: 'relative',
+        border: '1px solid #000000',
+        borderRadius: '2px',
+        padding: '20px',
+        margin: '20px',
+        backgroundColor: '#f9f9f9',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+        width: '200px',
+        height: '200px',
+        '&:hover': {
+          textDecoration: 'none',
+        },
+      }}
+    >
       <IconButton
         onClick={handleFavoriteClick}
         sx={{
@@ -74,7 +94,7 @@ export default function PokemonCard({ pokemon }) {
           top: 10,
           left: 10,
           backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          padding: '2px 6px', 
+          padding: '2px 6px',
           borderRadius: '4px',
           fontWeight: 'bold',
           fontSize: '0.75rem',
@@ -84,20 +104,24 @@ export default function PokemonCard({ pokemon }) {
       </Typography>
       <CardContent component={LinkBehavior} style={{ textDecoration: 'none', color: '#000000' }}>
         <img src={pokemon.image} alt={pokemon.names[language]} />
-        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 'bold' }}>{pokemon.names[language]}</Typography>
+        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+          {pokemon.names[language]}
+        </Typography>
         <Rating
           name={`pokemon-rating-${pokemon.id}`}
           value={rating}
           onChange={handleRatingChange}
-          onClick={event => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         />
-        <div sx={{
-          display: 'flex',
-          gap: '10px',
-          justifyContent: 'center',
-          marginBottom: '10px',
-          flexWrap: 'wrap',
-        }}>
+        <div
+          sx={{
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'center',
+            marginBottom: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
           {pokemon.types.map((type, index) => (
             <Chip
               key={index}
@@ -119,5 +143,5 @@ export default function PokemonCard({ pokemon }) {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

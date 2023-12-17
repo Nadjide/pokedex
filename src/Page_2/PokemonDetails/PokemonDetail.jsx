@@ -4,6 +4,7 @@ import { Box, Typography, Button, Modal } from '@mui/material';
 import { LanguageContext } from '../../Langue/LanguageContext';
 import typesData from '../../Page_1/PokemonList/types.json';
 import pokemonsData from '../../Page_1/PokemonList/pokemons.json';
+import SimilarPokemon from '../SimilarPokemon/SimilarPokemon';
 
 export default function PokemonDetail() {
   const { language } = useContext(LanguageContext);
@@ -82,6 +83,7 @@ export default function PokemonDetail() {
         Moves
       </Button>
       <MovesModal moves={pokemon.moves} open={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <SimilarPokemon pokemon={pokemon} />
     </Box>
   );
 }

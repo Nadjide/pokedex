@@ -1,21 +1,17 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { Box, Select, MenuItem } from '@mui/material';
 import SearchBar from '../SearchBar/SearchBar';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import pokemonData from './pokemons.json';
 import types from './types.json';
 import { LanguageContext } from '../../Langue/LanguageContext';
+import { FavoritesContext } from '../../FavoritesContext';
 
 export default function PokemonList() {
   const { language } = useContext(LanguageContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [favorites, setFavorites] = useState([]);
-
-  useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    setFavorites(storedFavorites);
-  }, []);
+  const { favorites } = useContext(FavoritesContext);
 
   const uniqueTypes = Array.from(new Set(pokemonData.flatMap(pokemon => pokemon.types)));
 
