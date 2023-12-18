@@ -4,6 +4,7 @@ import SearchBar from '../SearchBar/SearchBar'
 import PokemonCard from '../PokemonCard/PokemonCard'
 import { LanguageContext } from '../../Langue/LanguageContext'
 import { FavoritesContext } from '../../FavoritesContext'
+import { TypesContext } from '../TypesContext/TypesContext'
 
 export default function PokemonList() {
   const { language } = useContext(LanguageContext)
@@ -11,17 +12,17 @@ export default function PokemonList() {
   const [typeFilter, setTypeFilter] = useState('')
   const { favorites } = useContext(FavoritesContext)
   const [pokemonData, setPokemonData] = useState([])
-  const [types, setTypes] = useState({})
+  const types = useContext(TypesContext)
 
   useEffect(() => {
     fetch('https://pokedex-jgabriele.vercel.app/pokemons.json')
       .then((response) => response.json())
       .then((data) => setPokemonData(data))
-
-    fetch('https://pokedex-jgabriele.vercel.app/types.json')
-      .then((response) => response.json())
-      .then((data) => setTypes(data))
   }, [])
+
+  if (!pokemonData.length || !Object.keys(types).length) {
+    return <div>Chargement...</div>
+  }
 
   const uniqueTypes = Array.from(new Set(pokemonData.flatMap((pokemon) => pokemon.types)))
 

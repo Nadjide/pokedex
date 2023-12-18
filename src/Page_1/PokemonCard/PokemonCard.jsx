@@ -6,6 +6,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import { LanguageContext } from '../../Langue/LanguageContext'
 import { FavoritesContext } from '../../FavoritesContext'
 import { CircularProgress } from '@mui/material'
+import { TypesContext } from '../TypesContext/TypesContext'
 
 export default function PokemonCard({ pokemon }) {
   const { language } = useContext(LanguageContext)
@@ -13,7 +14,7 @@ export default function PokemonCard({ pokemon }) {
   const { favorites, setFavorites } = useContext(FavoritesContext)
   const [isFavorite, setIsFavorite] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [typesData, setTypesData] = useState({})
+  const typesData = useContext(TypesContext);
 
   useEffect(() => {
     setIsLoading(true)
@@ -24,13 +25,7 @@ export default function PokemonCard({ pokemon }) {
 
     const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || []
     setIsFavorite(storedFavorites.includes(pokemon.id))
-
-    fetch('https://pokedex-jgabriele.vercel.app/types.json')
-      .then((response) => response.json())
-      .then((data) => {
-        setTypesData(data)
-        setIsLoading(false)
-      })
+    setIsLoading(false)
   }, [pokemon.id])
 
   const handleRatingChange = (event, newValue) => {

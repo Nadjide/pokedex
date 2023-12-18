@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, Button, Modal } from '@mui/material';
 import { LanguageContext } from '../../Langue/LanguageContext';
 import SimilarPokemon from '../SimilarPokemon/SimilarPokemon';
+import { TypesContext } from '../../Page_1/TypesContext/TypesContext';
+
 
 export default function PokemonDetail() {
   const { language } = useContext(LanguageContext);
   const { id } = useParams();
   const [pokemon, setPokemon] = useState(null);
-  const [typesData, setTypesData] = useState({});
+  const typesData = useContext(TypesContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -18,15 +20,7 @@ export default function PokemonDetail() {
         const pokemonData = data.find(pokemon => pokemon.id === Number(id));
         setPokemon(pokemonData);
       });
-
-    fetch('https://pokedex-jgabriele.vercel.app/types.json')
-      .then(response => response.json())
-      .then(data => setTypesData(data));
   }, [id]);
-
-  if (!pokemon) {
-    return <Typography>Chargement...</Typography>;
-  }
 
   if (!pokemon) {
     return <Typography>Chargement...</Typography>;
