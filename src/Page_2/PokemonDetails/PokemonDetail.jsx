@@ -2,20 +2,31 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Button, Modal } from '@mui/material';
 import { LanguageContext } from '../../Langue/LanguageContext';
-import typesData from '../../Page_1/PokemonList/types.json';
-import pokemonsData from '../../Page_1/PokemonList/pokemons.json';
 import SimilarPokemon from '../SimilarPokemon/SimilarPokemon';
 
 export default function PokemonDetail() {
   const { language } = useContext(LanguageContext);
   const { id } = useParams();
   const [pokemon, setPokemon] = useState(null);
+  const [typesData, setTypesData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const pokemonData = pokemonsData.find(pokemon => pokemon.id === Number(id));
-    setPokemon(pokemonData);
+    fetch('https://pokedex-jgabriele.vercel.app/pokemons.json')
+      .then(response => response.json())
+      .then(data => {
+        const pokemonData = data.find(pokemon => pokemon.id === Number(id));
+        setPokemon(pokemonData);
+      });
+
+    fetch('https://pokedex-jgabriele.vercel.app/types.json')
+      .then(response => response.json())
+      .then(data => setTypesData(data));
   }, [id]);
+
+  if (!pokemon) {
+    return <Typography>Chargement...</Typography>;
+  }
 
   if (!pokemon) {
     return <Typography>Chargement...</Typography>;

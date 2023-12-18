@@ -3,7 +3,6 @@ import { Link as RouterLink } from 'react-router-dom'
 import { Card, CardContent, Typography, Chip, Rating, IconButton } from '@mui/material'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
-import typesData from '../PokemonList/types.json'
 import { LanguageContext } from '../../Langue/LanguageContext'
 import { FavoritesContext } from '../../FavoritesContext'
 import { CircularProgress } from '@mui/material'
@@ -14,6 +13,7 @@ export default function PokemonCard({ pokemon }) {
   const { favorites, setFavorites } = useContext(FavoritesContext)
   const [isFavorite, setIsFavorite] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [typesData, setTypesData] = useState({})
 
   useEffect(() => {
     setIsLoading(true)
@@ -24,7 +24,13 @@ export default function PokemonCard({ pokemon }) {
 
     const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || []
     setIsFavorite(storedFavorites.includes(pokemon.id))
-    setIsLoading(false)
+
+    fetch('https://pokedex-jgabriele.vercel.app/types.json')
+      .then((response) => response.json())
+      .then((data) => {
+        setTypesData(data)
+        setIsLoading(false)
+      })
   }, [pokemon.id])
 
   const handleRatingChange = (event, newValue) => {
