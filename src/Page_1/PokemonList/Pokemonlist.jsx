@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react'
-import { Box, Select, MenuItem } from '@mui/material'
+import { Box, Select, MenuItem, Typography } from '@mui/material'
+import FilterListIcon from '@mui/icons-material/FilterList'
 import SearchBar from '../SearchBar/SearchBar'
 import PokemonCard from '../PokemonCard/PokemonCard'
 import { LanguageContext } from '../../Langue/LanguageContext'
@@ -21,78 +22,82 @@ export default function PokemonList() {
   }, [])
 
   if (!pokemonData.length || !Object.keys(types).length) {
-    return <div>Chargement...</div>
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Poppins, sans-serif', fontSize: '1.1rem' }}>
+          Chargement...
+        </Typography>
+      </Box>
+    )
   }
 
   const uniqueTypes = Array.from(new Set(pokemonData.flatMap((pokemon) => pokemon.types)))
 
   const filteredPokemons = pokemonData
     .filter((pokemon) => pokemon.names[language].toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter((pokemon) => {
-      return typeFilter ? pokemon.types.includes(typeFilter) : true
-    })
+    .filter((pokemon) => (typeFilter ? pokemon.types.includes(typeFilter) : true))
     .sort((a, b) => {
       const aIsFavorite = favorites.includes(a.id)
       const bIsFavorite = favorites.includes(b.id)
-
-      if (aIsFavorite && !bIsFavorite) {
-        return -1
-      }
-
-      if (bIsFavorite && !aIsFavorite) {
-        return 1
-      }
-
+      if (aIsFavorite && !bIsFavorite) return -1
+      if (bIsFavorite && !aIsFavorite) return 1
       return 0
     })
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexFlow: 'row wrap',
-        margin: '0 auto',
-        maxWidth: '1200px',
-        padding: '20px',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <SearchBar setSearchTerm={setSearchTerm} />
-      <Select
-        value={typeFilter}
-        displayEmpty
-        onChange={(e) => setTypeFilter(e.target.value)}
+    <Box sx={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
+      {/* Filters */}
+      <Box sx={{ display: 'flex', gap: '16px', mb: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Box sx={{ flex: 1, minWidth: '200px' }}>
+          <SearchBar setSearchTerm={setSearchTerm} />
+        </Box>
+        <Select
+          value={typeFilter}
+          displayEmpty
+          onChange={(e) => setTypeFilter(e.target.value)}
+          startAdornment={<FilterListIcon sx={{ color: 'rgba(255,255,255,0.4)', ml: 1, mr: 0.5, fontSize: '1.1rem' }} />}
+          sx={{
+            minWidth: '190px',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '50px',
+            color: 'white',
+            fontFamily: 'Poppins, sans-serif',
+            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+            '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.4)' },
+            '& .MuiSelect-select': { padding: '10px 16px 10px 4px' },
+            '&:hover': {
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(230,57,70,0.5)',
+            },
+          }}
+        >
+          <MenuItem value="" style={{ fontFamily: 'Poppins, sans-serif' }}>Tous les types</MenuItem>
+          {uniqueTypes.map((type) => (
+            <MenuItem key={type} value={type} style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {types[type] ? types[type].translations[language] : type}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box>
+
+      <Typography
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          width: '100%',
-          margin: '20px 0',
-          marginTop: '10px',
-          backgroundColor: '#282c34',
-          border: '1px solid #ffffff',
-          color: 'white',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontSize: '16px',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          padding: '3px',
-          height: '50px',
+          color: 'rgba(255,255,255,0.3)',
+          fontSize: '0.8rem',
+          fontFamily: 'Poppins, sans-serif',
+          mb: 2,
+          textAlign: 'left',
         }}
       >
-        <MenuItem value="" style={{ opacity: 0.7 }}>
-          {types.normal ? types.normal.translations[language] : 'Tous'}
-        </MenuItem>
-        {uniqueTypes.map((type) => (
-          <MenuItem key={type} value={type}>
-            {types[type] ? types[type].translations[language] : ''}
-          </MenuItem>
+        {filteredPokemons.length} Pokémon{filteredPokemons.length > 1 ? 's' : ''}
+      </Typography>
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {filteredPokemons.map((pokemon) => (
+          <PokemonCard key={pokemon.id} pokemon={pokemon} />
         ))}
-      </Select>
-      {filteredPokemons.map((pokemon) => (
-        <PokemonCard key={pokemon.id} pokemon={pokemon} />
-      ))}
+      </Box>
     </Box>
   )
 }
