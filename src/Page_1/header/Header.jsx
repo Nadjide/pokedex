@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { AppBar, Toolbar, Select, MenuItem, Box } from '@mui/material';
+import React, { useContext, useEffect } from 'react';
+import { AppBar, Toolbar, Select, MenuItem, Box, Typography } from '@mui/material';
 import { styled } from '@mui/system';
 import { LanguageContext } from '../../Langue/LanguageContext.jsx';
 import { Link } from 'react-router-dom';
@@ -12,24 +12,29 @@ const StyledAppBar = styled(AppBar)({
 });
 
 const StyledToolbar = styled(Toolbar)({
-  minHeight: '64px',
+  minHeight: '68px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '0 24px',
+  maxWidth: '1400px',
+  width: '100%',
+  margin: '0 auto',
 });
 
 const LogoWrapper = styled(Box)({
   display: 'flex',
   alignItems: 'center',
+  gap: '12px',
   textDecoration: 'none',
   '& img': {
-    height: '40px',
-    filter: 'drop-shadow(0 0 8px rgba(230, 57, 70, 0.6))',
-    transition: 'filter 0.3s ease',
+    height: '42px',
+    filter: 'drop-shadow(0 0 10px rgba(230, 57, 70, 0.7))',
+    transition: 'filter 0.3s ease, transform 0.3s ease',
   },
   '&:hover img': {
-    filter: 'drop-shadow(0 0 16px rgba(230, 57, 70, 1))',
+    filter: 'drop-shadow(0 0 18px rgba(230, 57, 70, 1))',
+    transform: 'scale(1.04)',
   },
 });
 
@@ -59,21 +64,42 @@ const StyledSelect = styled(Select)({
 export default function Header() {
   const { language, setLanguage } = useContext(LanguageContext);
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   return (
     <StyledAppBar position="sticky">
       <StyledToolbar>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <LogoWrapper>
             <img src={logo} alt="Pokédex" />
+            <Typography
+              variant="h6"
+              sx={{
+                color: '#fff',
+                fontFamily: 'Poppins, sans-serif',
+                fontWeight: 800,
+                letterSpacing: '0.05em',
+                display: { xs: 'none', sm: 'block' },
+                background: 'linear-gradient(90deg, #ffffff, #e63946)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              POKÉDEX
+            </Typography>
           </LogoWrapper>
         </Link>
         <StyledSelect
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
           variant="outlined"
+          size="small"
+          aria-label="Language selector"
         >
-          <MenuItem value="en" style={{ fontFamily: 'Poppins, sans-serif' }}>🇬🇧 EN</MenuItem>
           <MenuItem value="fr" style={{ fontFamily: 'Poppins, sans-serif' }}>🇫🇷 FR</MenuItem>
+          <MenuItem value="en" style={{ fontFamily: 'Poppins, sans-serif' }}>🇬🇧 EN</MenuItem>
         </StyledSelect>
       </StyledToolbar>
     </StyledAppBar>
