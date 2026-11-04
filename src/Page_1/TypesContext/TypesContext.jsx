@@ -1,17 +1,10 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext } from 'react';
+import { usePokemon } from '../../context/PokemonContext.jsx';
 
-export const TypesContext = createContext();
+export const TypesContext = createContext({});
 
 export const TypesProvider = ({ children }) => {
-  const [typesData, setTypesData] = useState({});
-
-  useEffect(() => {
-    fetch('https://pokedex-jgabriele.vercel.app/types.json')
-      .then((response) => response.json())
-      .then((data) => {
-        setTypesData(data);
-      });
-  }, []);
+  const { typesData } = usePokemon();
 
   return (
     <TypesContext.Provider value={typesData}>

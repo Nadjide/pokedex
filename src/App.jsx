@@ -4,6 +4,7 @@ import './App.css';
 import Header from './Page_1/header/Header.jsx';
 import { LanguageContext } from './Langue/LanguageContext.jsx';
 import { FavoritesProvider } from './FavoritesContext.jsx';
+import { PokemonProvider } from './context/PokemonContext.jsx';
 import { TypesProvider } from './Page_1/TypesContext/TypesContext.jsx';
 import { FilterProvider } from './components/FilterShield/FilterContext.jsx';
 import { ComparisonProvider } from './Comparison/ComparisonContext.jsx';
@@ -16,19 +17,21 @@ function App() {
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
       <FavoritesProvider>
-        <TypesProvider>
-          <FilterProvider>
-            <ComparisonProvider>
-              <Router>
-                <div className="App">
-                  <Header />
-                  <AnimatedRoutes />
-                  <ComparisonDock />
-                </div>
-              </Router>
-            </ComparisonProvider>
-          </FilterProvider>
-        </TypesProvider>
+        <PokemonProvider>
+          <TypesProvider>
+            <FilterProvider>
+              <ComparisonProvider>
+                <Router>
+                  <div className="App">
+                    <Header />
+                    <AnimatedRoutes />
+                    <ComparisonDock />
+                  </div>
+                </Router>
+              </ComparisonProvider>
+            </FilterProvider>
+          </TypesProvider>
+        </PokemonProvider>
       </FavoritesProvider>
     </LanguageContext.Provider>
   );
