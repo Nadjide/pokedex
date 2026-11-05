@@ -1,70 +1,103 @@
-# Getting Started with Create React App
+# ⚡ Pokédex — Application Web Moderne (2026)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Une application Pokédex moderne, fluide et performante développée avec **React 18**, **Vite**, **Material UI**, **Framer Motion** et **Recharts**.
 
-## Available Scripts
+![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite&logoColor=white)
+![MUI](https://img.shields.io/badge/MUI-6.5-007FFF?logo=mui&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-3.2-6E9F18?logo=vitest&logoColor=white)
+![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-FF0055?logo=framer&logoColor=white)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## ✨ Fonctionnalités Clés
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- 🎨 **Design Glassmorphism Dark Theme** : Interface sombre moderne avec effets de flou d'arrière-plan, bordures subtiles et accents colorés dynamiques selon les types élémentaires.
+- 🔍 **Recherche & Filtrage Avancés** :
+  - Recherche instantanée par nom (multilingue) ou par numéro Pokédex (`#25`, `Pikachu`).
+  - Filtrage multi-types combinable (ET logique) avec puces aux couleurs officielles des types.
+  - Sélecteur de générations.
+  - Multiples options de tri : numéro croissant/décroissant, nom A-Z/Z-A, favoris en tête ⭐, poids et taille.
+- 📊 **Comparateur & Graphique Radar Interactif** :
+  - Dock escamotable permettant de sélectionner et comparer 2 Pokémon côte-à-côte.
+  - Graphique Radar interactif (PV, Attaque, Défense, Attaque Spé, Défense Spé, Vitesse) intégrant les statistiques de l'API PokeAPI avec fallback local.
+- ⭐ **Gestion des Favoris & Notes** :
+  - Ajout/retrait en favoris synchronisé automatiquement dans `localStorage`.
+  - Système de notation par étoiles par Pokémon.
+- 🌐 **Internationalisation Complète (FR / EN)** :
+  - Bascule instantanée entre Français 🇫🇷 et Anglais 🇬🇧.
+  - Traduction de l'intégralité des libellés de l'interface, des types et des noms des Pokémon.
+- ⚡ **Architecture Optimisée & Zéro Redondance Réseau** :
+  - `PokemonContext` centralisé avec mise en cache mémoire : chargement unique de la base de données.
+  - Affichage instantané (0 ms de latence) lors de la navigation vers les détails ou les Pokémon similaires.
+  - Code-splitting dynamique (`manualChunks`) via Vite (bundle principal réduit à < 30 kB).
+  - Écrans de chargement animés avec **Skeletons MUI** et gestion complète des erreurs réseau / page 404.
+- 🧪 **Suite de Tests Vitest** :
+  - Tests unitaires et d'intégration validant le rendu, le filtrage, la gestion des favoris et la logique de comparaison.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🚀 Démarrage Rapide
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prérequis
+- [Node.js](https://nodejs.org/) `>= 22.0.0`
+- [npm](https://www.npmjs.com/)
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Cloner le dépôt
+git clone https://github.com/Nadjide/pokedex.git
+cd pokedex
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Installer les dépendances
+npm install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Scripts Disponibles
 
-### `npm run eject`
+| Commande | Description |
+| :--- | :--- |
+| `npm run dev` | Lance le serveur de développement local Vite avec Hot Reload (`http://localhost:5173`). |
+| `npm run build` | Compile et optimise l'application pour la production dans le dossier `dist/`. |
+| `npm run preview` | Prévisualise en local le build de production généré. |
+| `npm test` | Exécute la suite de tests unitaires via Vitest. |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 📁 Architecture du Projet
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```text
+pokedex/
+├── public/                     # Assets statiques, manifest PWA, favicon
+├── src/
+│   ├── AnimatedRoutes.jsx      # Routage avec transitions Framer Motion & Code Splitting
+│   ├── App.jsx                 # Point d'entrée avec composition des Providers
+│   ├── FavoritesContext.jsx    # Gestionnaire centralisé des favoris et localStorage
+│   ├── context/
+│   │   └── PokemonContext.jsx  # Cache central des données Pokémon & types
+│   ├── i18n/
+│   │   └── translations.js     # Dictionnaire de traduction bilingue (FR/EN)
+│   ├── Theme/
+│   │   └── typeColors.js       # Palette des couleurs élémentaires Pokémon
+│   ├── components/
+│   │   ├── AdvancedSearch/     # Barre de recherche & filtres multi-critères
+│   │   ├── ComparisonDock/     # Tiroir escamotable de comparaison
+│   │   ├── PokemonRadarChart/  # Visualisation graphique des stats avec Recharts
+│   │   └── FilterShield/       # Contexte de filtrage et tri
+│   ├── Page_1/
+│   │   ├── header/             # Barre de navigation et sélecteur de langue
+│   │   ├── PokemonCard/        # Carte Pokémon & Skeletons de chargement
+│   │   └── PokemonList/        # Grille principale avec tri réactif
+│   └── Page_2/
+│       ├── PokemonDetails/     # Page de détails avec statistiques & modale des capacités
+│       └── SimilarPokemon/     # Suggestions instantanées par affinité de type
+├── vite.config.js              # Configuration Vite avec optimisation des chunks vendor
+└── package.json
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 🛠️ Déploiement
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Le projet est configuré pour un déploiement continu sur **Vercel** (`vercel.json`) avec redirection SPA automatique vers `index.html`.

@@ -1,39 +1,40 @@
-import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import './App.css'
-import Header from './Page_1/header/Header.jsx'
-import PokemonList from './Page_1/PokemonList/Pokemonlist.jsx'
-import PokemonDetail from './Page_2/PokemonDetails/PokemonDetail.jsx'
-import { LanguageContext } from './Langue/LanguageContext.jsx'
-import { FavoritesContext } from './FavoritesContext'
-import { TypesProvider } from './Page_1/TypesContext/TypesContext.jsx'
+import React, { useState } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import './App.css';
+import Header from './Page_1/header/Header.jsx';
+import { LanguageContext } from './Langue/LanguageContext.jsx';
+import { FavoritesProvider } from './FavoritesContext.jsx';
+import { PokemonProvider } from './context/PokemonContext.jsx';
+import { TypesProvider } from './Page_1/TypesContext/TypesContext.jsx';
+import { FilterProvider } from './components/FilterShield/FilterContext.jsx';
+import { ComparisonProvider } from './Comparison/ComparisonContext.jsx';
+import ComparisonDock from './components/ComparisonDock/ComparisonDock.jsx';
+import AnimatedRoutes from './AnimatedRoutes.jsx';
 
 function App() {
-  const [language, setLanguage] = useState('en')
-  const [favorites, setFavorites] = useState([])
-
-  useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || []
-    setFavorites(storedFavorites)
-  }, [])
+  const [language, setLanguage] = useState('fr');
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
-      <FavoritesContext.Provider value={{ favorites, setFavorites }}>
-        <TypesProvider>
-          <Router>
-            <div className="App">
-              <Header />
-              <Routes>
-                <Route path="/" element={<PokemonList />} />
-                <Route path="/pokemon/:id" element={<PokemonDetail />} />
-              </Routes>
-            </div>
-          </Router>
-        </TypesProvider>
-      </FavoritesContext.Provider>
+      <FavoritesProvider>
+        <PokemonProvider>
+          <TypesProvider>
+            <FilterProvider>
+              <ComparisonProvider>
+                <Router>
+                  <div className="App">
+                    <Header />
+                    <AnimatedRoutes />
+                    <ComparisonDock />
+                  </div>
+                </Router>
+              </ComparisonProvider>
+            </FilterProvider>
+          </TypesProvider>
+        </PokemonProvider>
+      </FavoritesProvider>
     </LanguageContext.Provider>
-  )
+  );
 }
 
-export default App
+export default App;

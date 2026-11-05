@@ -1,103 +1,222 @@
-import React, { useContext, useState, useEffect } from 'react'
-import { Box, Select, MenuItem, Typography } from '@mui/material'
-import FilterListIcon from '@mui/icons-material/FilterList'
-import SearchBar from '../SearchBar/SearchBar'
-import PokemonCard from '../PokemonCard/PokemonCard'
-import { LanguageContext } from '../../Langue/LanguageContext'
-import { FavoritesContext } from '../../FavoritesContext'
-import { TypesContext } from '../TypesContext/TypesContext'
+import React, { useContext } from 'react';
+import { Box, Typography, Button, Alert } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import PokemonCard from '../PokemonCard/PokemonCard';
+import PokemonCardSkeleton from '../PokemonCard/PokemonCardSkeleton';
+import { LanguageContext } from '../../Langue/LanguageContext';
+import { useFavorites } from '../../FavoritesContext';
+import { usePokemon } from '../../context/PokemonContext.jsx';
+import { useFilter } from '../../components/FilterShield/FilterContext.jsx';
+import AdvancedSearch from '../../components/AdvancedSearch/AdvancedSearch.jsx';
 
 export default function PokemonList() {
-  const { language } = useContext(LanguageContext)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const { favorites } = useContext(FavoritesContext)
-  const [pokemonData, setPokemonData] = useState([])
-  const types = useContext(TypesContext)
+  const { language } = useContext(LanguageContext);
+  const { favorites } = useFavorites();
+  const { pokemons, loading, error, refetch } = usePokemon();
+  const {
+    searchTerm,
+    activeTypeFilters,
+    activeGenFilter,
+    sortOrder,
+    clearFilters,
+  } = useFilter();
 
-  useEffect(() => {
-    fetch('https://pokedex-jgabriele.vercel.app/pokemons.json')
-      .then((response) => response.json())
-      .then((data) => setPokemonData(data))
-  }, [])
-
-  if (!pokemonData.length || !Object.keys(types).length) {
+  if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'Poppins, sans-serif', fontSize: '1.1rem' }}>
-          Chargement...
-        </Typography>
+      <Box sx={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
+        <AdvancedSearch />
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, mt: 3 }}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <PokemonCardSkeleton key={i} />
+          ))}
+        </Box>
       </Box>
-    )
+    );
   }
 
-  const uniqueTypes = Array.from(new Set(pokemonData.flatMap((pokemon) => pokemon.types)))
+  if (error) {
+    return (
+      <Box sx={{ maxWidth: '600px', margin: '80px auto', padding: '24px', textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>
+          {error}
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={refetch}
+          startIcon={<RefreshIcon />}
+          sx={{
+            background: '#e63946',
+            color: '#fff',
+            borderRadius: '50px',
+            fontFamily: 'Poppins, sans-serif',
+            textTransform: 'none',
+            '&:hover': { background: '#d62828' },
+          }}
+        >
+          {language === 'fr' ? 'Réessayer' : 'Retry'}
+        </Button>
+      </Box>
+    );
+  }
 
-  const filteredPokemons = pokemonData
-    .filter((pokemon) => pokemon.names[language].toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter((pokemon) => (typeFilter ? pokemon.types.includes(typeFilter) : true))
-    .sort((a, b) => {
-      const aIsFavorite = favorites.includes(a.id)
-      const bIsFavorite = favorites.includes(b.id)
-      if (aIsFavorite && !bIsFavorite) return -1
-      if (bIsFavorite && !aIsFavorite) return 1
-      return 0
+  const filteredPokemons = pokemons
+    .filter((pokemon) => {
+      // 1. Filtrage par Nom / ID
+      if (searchTerm) {
+        const lowerTerm = searchTerm.trim().toLowerCase();
+        const localizedName = pokemon.names?.[language]?.toLowerCase() || '';
+        const defaultName = (pokemon.names?.en || pokemon.names?.fr || '').toLowerCase();
+        const matchesName = localizedName.includes(lowerTerm) || defaultName.includes(lowerTerm);
+        const matchesId = pokemon.id.toString() === lowerTerm || `#${pokemon.id}` === lowerTerm;
+        if (!matchesName && !matchesId) return false;
+      }
+
+      // 2. Filtrage par Types (ET logique)
+      if (activeTypeFilters && activeTypeFilters.length > 0) {
+        const hasAllTypes = activeTypeFilters.every((t) => pokemon.types?.includes(t));
+        if (!hasAllTypes) return false;
+      }
+
+      // 3. Filtrage par Génération (Gen 1 = 1 to 151)
+      if (activeGenFilter) {
+        const genId = Number(activeGenFilter);
+        if (genId === 1) {
+          if (pokemon.id > 151) return false;
+        } else {
+          // Dataset currently only covers Gen 1 (1-151)
+          return false;
+        }
+      }
+
+      return true;
     })
+    .sort((a, b) => {
+      const nameA = a.names?.[language] || a.names?.en || '';
+      const nameB = b.names?.[language] || b.names?.en || '';
+
+      switch (sortOrder) {
+        case 'id-desc':
+          return b.id - a.id;
+        case 'name-asc':
+          return nameA.localeCompare(nameB);
+        case 'name-desc':
+          return nameB.localeCompare(nameA);
+        case 'favorites': {
+          const aFav = favorites.includes(a.id);
+          const bFav = favorites.includes(b.id);
+          if (aFav && !bFav) return -1;
+          if (!aFav && bFav) return 1;
+          return a.id - b.id;
+        }
+        case 'weight-desc':
+          return (b.weight || 0) - (a.weight || 0);
+        case 'height-desc':
+          return (b.height || 0) - (a.height || 0);
+        case 'id-asc':
+        default:
+          return a.id - b.id;
+      }
+    });
 
   return (
     <Box sx={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
-      {/* Filters */}
-      <Box sx={{ display: 'flex', gap: '16px', mb: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Box sx={{ flex: 1, minWidth: '200px' }}>
-          <SearchBar setSearchTerm={setSearchTerm} />
-        </Box>
-        <Select
-          value={typeFilter}
-          displayEmpty
-          onChange={(e) => setTypeFilter(e.target.value)}
-          startAdornment={<FilterListIcon sx={{ color: 'rgba(255,255,255,0.4)', ml: 1, mr: 0.5, fontSize: '1.1rem' }} />}
-          sx={{
-            minWidth: '190px',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '50px',
-            color: 'white',
-            fontFamily: 'Poppins, sans-serif',
-            '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-            '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.4)' },
-            '& .MuiSelect-select': { padding: '10px 16px 10px 4px' },
-            '&:hover': {
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(230,57,70,0.5)',
-            },
-          }}
-        >
-          <MenuItem value="" style={{ fontFamily: 'Poppins, sans-serif' }}>Tous les types</MenuItem>
-          {uniqueTypes.map((type) => (
-            <MenuItem key={type} value={type} style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {types[type] ? types[type].translations[language] : type}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
+      {/* Advanced Search & Filters */}
+      <AdvancedSearch />
 
-      <Typography
+      <Box
         sx={{
-          color: 'rgba(255,255,255,0.3)',
-          fontSize: '0.8rem',
-          fontFamily: 'Poppins, sans-serif',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: 2,
-          textAlign: 'left',
+          mt: 2,
+          px: 1,
         }}
       >
-        {filteredPokemons.length} Pokémon{filteredPokemons.length > 1 ? 's' : ''}
-      </Typography>
+        <Typography
+          sx={{
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: '0.85rem',
+            fontFamily: 'Poppins, sans-serif',
+            fontWeight: 500,
+          }}
+        >
+          {filteredPokemons.length} Pokémon{filteredPokemons.length > 1 ? 's' : ''}{' '}
+          {language === 'fr' ? 'trouvé' : 'found'}{filteredPokemons.length > 1 && language === 'fr' ? 's' : ''}
+        </Typography>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {filteredPokemons.map((pokemon) => (
-          <PokemonCard key={pokemon.id} pokemon={pokemon} />
-        ))}
+        {(activeTypeFilters.length > 0 || searchTerm || activeGenFilter) && (
+          <Button
+            size="small"
+            onClick={clearFilters}
+            sx={{
+              color: '#e63946',
+              textTransform: 'none',
+              fontFamily: 'Poppins, sans-serif',
+              fontSize: '0.8rem',
+            }}
+          >
+            {language === 'fr' ? 'Réinitialiser les filtres' : 'Reset filters'}
+          </Button>
+        )}
       </Box>
+
+      {filteredPokemons.length === 0 ? (
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            px: 2,
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: '20px',
+            border: '1px dashed rgba(255,255,255,0.1)',
+          }}
+        >
+          <Typography
+            sx={{
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              fontFamily: 'Poppins, sans-serif',
+              mb: 1,
+            }}
+          >
+            {language === 'fr' ? 'Aucun Pokémon ne correspond à votre recherche' : 'No Pokémon matches your search'}
+          </Typography>
+          <Typography
+            sx={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '0.85rem',
+              fontFamily: 'Poppins, sans-serif',
+              mb: 2,
+            }}
+          >
+            {language === 'fr'
+              ? 'Essayez de modifier vos filtres ou termes de recherche.'
+              : 'Try adjusting your filters or search terms.'}
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={clearFilters}
+            sx={{
+              borderColor: '#e63946',
+              color: '#e63946',
+              borderRadius: '50px',
+              textTransform: 'none',
+              fontFamily: 'Poppins, sans-serif',
+              '&:hover': { borderColor: '#d62828', background: 'rgba(230,57,70,0.1)' },
+            }}
+          >
+            {language === 'fr' ? 'Effacer tous les filtres' : 'Clear all filters'}
+          </Button>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>
+          {filteredPokemons.map((pokemon) => (
+            <PokemonCard key={pokemon.id} pokemon={pokemon} />
+          ))}
+        </Box>
+      )}
     </Box>
-  )
+  );
 }
