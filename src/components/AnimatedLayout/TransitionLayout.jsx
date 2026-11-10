@@ -1,41 +1,30 @@
-// src/components/TransitionLayout/TransitionLayout.jsx
+// src/components/AnimatedLayout/TransitionLayout.jsx
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const pageVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98,
-  },
-  in: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-  },
-  out: {
-    opacity: 0,
-    y: -20,
-    scale: 1.02,
-  },
+  initial: { opacity: 0, y: 14 },
+  in: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.2, 0.8, 0.2, 1] } },
+  out: { opacity: 0, transition: { duration: 0.14, ease: 'easeIn' } },
 };
 
-const pageTransition = {
-  type: 'tween',
-  ease: 'anticipate',
-  duration: 0.5,
+const reducedVariants = {
+  initial: { opacity: 0 },
+  in: { opacity: 1, transition: { duration: 0.01 } },
+  out: { opacity: 0, transition: { duration: 0.01 } },
 };
 
-// Utiliser ce wrap pour toutes les Routes dans App.js
+// Enveloppe chaque route pour animer les changements de page.
 const TransitionLayout = ({ children }) => {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
       initial="initial"
       animate="in"
       exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
-      style={{ width: '100%', height: '100%'}} // Assurer le plein écran sans overflow bizarre
+      variants={reduceMotion ? reducedVariants : pageVariants}
+      style={{ width: '100%' }}
     >
       {children}
     </motion.div>

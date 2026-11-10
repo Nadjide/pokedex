@@ -1,394 +1,556 @@
-import React, { useContext, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Modal, Chip, Skeleton, IconButton } from '@mui/material';
+import { Box, Rating, Tooltip, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import CloseIcon from '@mui/icons-material/Close';
-import { LanguageContext } from '../../Langue/LanguageContext';
-import { useFavorites } from '../../FavoritesContext';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import StarIcon from '@mui/icons-material/Star';
 import { usePokemon } from '../../context/PokemonContext.jsx';
+import { usePokemonDetails } from '../../hooks/usePokemonDetails.js';
+import { useRating } from '../../hooks/useRating.js';
+import { useTranslation } from '../../i18n/translations.js';
+import { getTypeColor } from '../../Theme/typeColors.js';
+import { formatHeight, formatId, formatSlug, formatWeight, getPokemonName } from '../../utils/pokemon.js';
 import SimilarPokemon from '../SimilarPokemon/SimilarPokemon';
-import { TypesContext } from '../../Page_1/TypesContext/TypesContext';
-import { getTypeBackground } from '../../Theme/typeColors';
 import CompareButton from '../../components/CompareButton.jsx';
+import FavoriteButton, { pillButtonSx } from '../../components/FavoriteButton.jsx';
+import PokemonArtwork from '../../components/PokemonArtwork.jsx';
+import PokeballMark from '../../components/PokeballMark.jsx';
+import TypeBadge from '../../components/TypeBadge.jsx';
+import { Shimmer } from '../../Page_1/PokemonCard/PokemonCardSkeleton.jsx';
+import StatsCard from './StatsCard.jsx';
+import DefensesCard from './DefensesCard.jsx';
+import EvolutionCard from './EvolutionCard.jsx';
+import MovesCard from './MovesCard.jsx';
 
-export default function PokemonDetail() {
-  const { language } = useContext(LanguageContext);
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { getPokemonById, loading } = usePokemon();
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const typesData = useContext(TypesContext) || {};
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const pageSx = {
+  maxWidth: 1180,
+  mx: 'auto',
+  px: { xs: 2, md: 3 },
+  pt: { xs: 2.5, md: 4 },
+};
 
-  const pokemon = getPokemonById(id);
+const heroSx = {
+  position: 'relative',
+  isolation: 'isolate',
+  overflow: 'hidden',
+  display: 'grid',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1.1fr) minmax(0, 0.9fr)' },
+  gridTemplateAreas: { xs: '"art" "text" "facts"', md: '"text art" "facts facts"' },
+  alignItems: 'center',
+  columnGap: 4,
+  rowGap: { xs: 2.5, md: 4.5 },
+  p: { xs: 2.5, sm: 4, md: 5.5 },
+  borderRadius: 'var(--radius-xl)',
+  background:
+    'linear-gradient(135deg, color-mix(in srgb, var(--type) var(--hero-tint), var(--surface)) 0%, color-mix(in srgb, var(--type-2) 14%, var(--surface)) 100%)',
+  border: '1px solid color-mix(in srgb, var(--type) 34%, var(--border))',
+  boxShadow: 'var(--shadow-lg)',
+};
 
-  if (loading) {
-    return (
-      <Box sx={{ maxWidth: '680px', margin: '0 auto', padding: '24px' }}>
-        <Skeleton variant="rounded" width={110} height={40} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '50px', mb: 2 }} />
-        <Box sx={{ p: 4, borderRadius: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Skeleton variant="circular" width={180} height={180} sx={{ bgcolor: 'rgba(255,255,255,0.08)', mb: 2 }} />
-          <Skeleton variant="text" width={200} height={40} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
-          <Box sx={{ display: 'flex', gap: 1, my: 2 }}>
-            <Skeleton variant="rounded" width={80} height={28} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '14px' }} />
-            <Skeleton variant="rounded" width={80} height={28} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '14px' }} />
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
+const factSx = {
+  minWidth: 0,
+  p: { xs: 1.75, md: 2.25 },
+  borderRadius: 'var(--radius-md)',
+  background: 'color-mix(in srgb, var(--surface) 62%, transparent)',
+  border: '1px solid var(--border)',
+  backdropFilter: 'blur(12px)',
+};
 
-  if (!pokemon) {
-    return (
-      <Box sx={{ maxWidth: '600px', margin: '80px auto', padding: '24px', textAlign: 'center' }}>
-        <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, fontFamily: 'Poppins, sans-serif', mb: 1.5 }}>
-          {language === 'fr' ? 'Pokémon introuvable' : 'Pokémon not found'}
-        </Typography>
-        <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Poppins, sans-serif', mb: 3 }}>
-          {language === 'fr'
-            ? `Aucun Pokémon ne correspond à l'identifiant #${id}.`
-            : `No Pokémon matches identifier #${id}.`}
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={() => navigate('/')}
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            background: '#e63946',
-            color: '#fff',
-            borderRadius: '50px',
-            fontFamily: 'Poppins, sans-serif',
-            textTransform: 'none',
-            px: 3,
-            '&:hover': { background: '#d62828' },
-          }}
-        >
-          {language === 'fr' ? 'Retour au Pokédex' : 'Back to Pokédex'}
-        </Button>
-      </Box>
-    );
-  }
+const factLabelSx = {
+  mb: 0.75,
+  color: 'var(--text-muted)',
+  fontSize: '0.72rem',
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+};
 
-  const primaryType = pokemon.types?.[0] || 'normal';
-  const typeColor = typesData[primaryType]?.backgroundColor || '#888';
-  const dynamicBg = getTypeBackground(primaryType);
-  const isFav = isFavorite(pokemon.id);
-  const pokemonName = pokemon.names?.[language] || pokemon.names?.fr || pokemon.names?.en || `#${pokemon.id}`;
+const factValueSx = {
+  fontFamily: 'var(--font-display)',
+  fontWeight: 700,
+  fontSize: { xs: '1.2rem', md: '1.4rem' },
+  lineHeight: 1.2,
+  fontVariantNumeric: 'tabular-nums',
+};
+
+const isTypingTarget = (target) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
+function NeighborLink({ pokemon, direction }) {
+  const { t, language } = useTranslation();
+  if (!pokemon) return null;
+
+  const name = getPokemonName(pokemon, language);
+  const label = direction === 'prev' ? t('previousPokemon') : t('nextPokemon');
 
   return (
-    <Box
-      sx={{
-        maxWidth: '680px',
-        margin: '0 auto',
-        padding: '24px',
-        background: `radial-gradient(circle at 50% 20%, ${dynamicBg} 0%, transparent 65%)`,
-        transition: 'background 0.8s ease-in-out',
-        borderRadius: '24px',
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              color: 'rgba(255,255,255,0.7)',
-              fontFamily: 'Poppins, sans-serif',
-              borderRadius: '50px',
-              px: 2,
-              textTransform: 'none',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              '&:hover': { color: '#fff', background: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            {language === 'fr' ? 'Retour' : 'Back'}
-          </Button>
-        </Link>
-
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <CompareButton pokemon={pokemon} />
-          <IconButton
-            onClick={() => toggleFavorite(pokemon.id)}
-            aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-            sx={{
-              color: isFav ? '#e63946' : 'rgba(255,255,255,0.4)',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              '&:hover': { color: '#e63946', background: 'rgba(230,57,70,0.15)' },
-            }}
-          >
-            {isFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* Main card */}
+    <Tooltip title={`${label} (${direction === 'prev' ? '←' : '→'})`}>
       <Box
-        sx={{
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: `1px solid ${typeColor}40`,
-          borderRadius: '24px',
-          overflow: 'hidden',
-          boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 40px ${typeColor}15`,
-          position: 'relative',
-        }}
+        component={Link}
+        to={`/pokemon/${pokemon.id}`}
+        aria-label={`${label} : ${name}`}
+        sx={{ ...pillButtonSx, gap: '4px', px: '12px', textDecoration: 'none' }}
       >
-        {/* Top accent */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: `linear-gradient(90deg, ${typeColor}, ${typeColor}60)`,
-          }}
-        />
-
-        {/* Hero section */}
-        <Box
-          sx={{
-            background: `linear-gradient(135deg, ${typeColor}25 0%, ${typeColor}08 100%)`,
-            padding: '48px 24px 28px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            position: 'relative',
-          }}
-        >
-          <Typography
-            sx={{
-              position: 'absolute',
-              top: '20px',
-              left: '24px',
-              color: 'rgba(255,255,255,0.45)',
-              fontWeight: 700,
-              fontSize: '1rem',
-              fontFamily: 'Poppins, sans-serif',
-            }}
-          >
-            #{String(pokemon.id).padStart(3, '0')}
-          </Typography>
-
-          <Box
-            component="img"
-            src={pokemon.image}
-            alt={pokemonName}
-            sx={{
-              width: '220px',
-              height: '220px',
-              objectFit: 'contain',
-              filter: `drop-shadow(0 10px 30px ${typeColor}70)`,
-              imageRendering: 'pixelated',
-            }}
-          />
-
-          <Typography
-            variant="h4"
-            sx={{
-              color: '#fff',
-              fontWeight: 800,
-              fontFamily: 'Poppins, sans-serif',
-              textTransform: 'capitalize',
-              mt: 2,
-              mb: 1.5,
-              fontSize: { xs: '1.8rem', md: '2.2rem' },
-            }}
-          >
-            {pokemonName}
-          </Typography>
-
-          <Box sx={{ display: 'flex', gap: '8px' }}>
-            {pokemon.types?.map((type, index) => {
-              const typeInfo = typesData[type];
-              const typeLabel = typeInfo?.translations?.[language] || type;
-              const bg = typeInfo?.backgroundColor || typeColor;
-
-              return (
-                <Chip
-                  key={index}
-                  label={typeLabel}
-                  sx={{
-                    backgroundColor: bg,
-                    color: '#fff',
-                    fontWeight: 600,
-                    fontFamily: 'Poppins, sans-serif',
-                    fontSize: '0.8rem',
-                    textTransform: 'capitalize',
-                    '& .MuiChip-label': { px: 1.5 },
-                  }}
-                />
-              );
-            })}
-          </Box>
+        {direction === 'prev' && <ChevronLeftIcon sx={{ ml: '-4px' }} />}
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, textTransform: 'capitalize' }}>
+          {name}
         </Box>
+        <Box component="span" sx={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatId(pokemon.id)}
+        </Box>
+        {direction === 'next' && <ChevronRightIcon sx={{ mr: '-4px' }} />}
+      </Box>
+    </Tooltip>
+  );
+}
 
-        {/* Stats row */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            borderTop: '1px solid rgba(255,255,255,0.07)',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          {[
-            {
-              label: language === 'fr' ? 'Taille' : 'Height',
-              value: `${(pokemon.height / 10).toFixed(1)} m`,
-            },
-            {
-              label: language === 'fr' ? 'Poids' : 'Weight',
-              value: `${(pokemon.weight / 10).toFixed(1)} kg`,
-            },
-            {
-              label: language === 'fr' ? 'Capacités' : 'Moves',
-              value: pokemon.moves?.length || 0,
-            },
-          ].map((stat, i, arr) => (
+function AbilityList({ details }) {
+  const { t, language } = useTranslation();
+  const abilities = details.abilities ?? details.core?.abilities ?? null;
+
+  if (!abilities) {
+    return details.loading ? (
+      <Shimmer sx={{ height: 26, width: '75%' }} />
+    ) : (
+      <Typography sx={{ color: 'var(--text-faint)', fontSize: '0.95rem' }}>{t('unavailable')}</Typography>
+    );
+  }
+
+  return (
+    <Box component="ul" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, m: 0, p: 0, listStyle: 'none' }}>
+      {abilities.map((ability) => {
+        const name = ability.names?.[language] || ability.names?.en || formatSlug(ability.slug);
+        const description = ability.description?.[language] || ability.description?.en || '';
+        const tooltip = [ability.hidden ? t('hiddenAbility') : null, description].filter(Boolean).join(' — ');
+
+        return (
+          <Tooltip key={ability.slug} title={tooltip}>
             <Box
-              key={stat.label}
+              component="li"
+              tabIndex={tooltip ? 0 : undefined}
               sx={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '20px 8px',
-                borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.25,
+                py: '5px',
+                borderRadius: 999,
+                border: '1px solid',
+                borderColor: 'var(--border-strong)',
+                borderStyle: ability.hidden ? 'dashed' : 'solid',
+                background: 'color-mix(in srgb, var(--surface) 70%, transparent)',
+                fontSize: '0.86rem',
+                fontWeight: 600,
               }}
             >
-              <Typography
-                sx={{
-                  color: 'rgba(255,255,255,0.45)',
-                  fontSize: '0.72rem',
-                  fontFamily: 'Poppins, sans-serif',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  mb: 0.5,
-                }}
-              >
-                {stat.label}
-              </Typography>
-              <Typography
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1.25rem',
-                  fontFamily: 'Poppins, sans-serif',
-                }}
-              >
-                {stat.value}
-              </Typography>
+              {name}
+              {ability.hidden && (
+                <Box component="span" sx={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 500 }}>
+                  {t('hiddenShort')}
+                </Box>
+              )}
             </Box>
-          ))}
-        </Box>
-
-        {/* Moves button */}
-        <Box sx={{ padding: '24px', display: 'flex', justifyContent: 'center' }}>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            sx={{
-              background: `linear-gradient(135deg, ${typeColor} 0%, ${typeColor}bb 100%)`,
-              color: '#fff',
-              fontFamily: 'Poppins, sans-serif',
-              fontWeight: 600,
-              px: 4,
-              py: 1.5,
-              borderRadius: '50px',
-              textTransform: 'none',
-              fontSize: '0.95rem',
-              boxShadow: `0 4px 20px ${typeColor}50`,
-              '&:hover': {
-                background: `linear-gradient(135deg, ${typeColor}dd 0%, ${typeColor} 100%)`,
-                boxShadow: `0 6px 28px ${typeColor}70`,
-              },
-            }}
-          >
-            {language === 'fr'
-              ? `Voir les capacités (${pokemon.moves?.length || 0})`
-              : `View moves (${pokemon.moves?.length || 0})`}
-          </Button>
-        </Box>
-      </Box>
-
-      <SimilarPokemon pokemon={pokemon} />
-      <MovesModal
-        moves={pokemon.moves || []}
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        typeColor={typeColor}
-        language={language}
-      />
+          </Tooltip>
+        );
+      })}
     </Box>
   );
 }
 
-function MovesModal({ moves, open, onClose, typeColor, language }) {
+function DetailSkeleton() {
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}
-    >
-      <Box
-        sx={{
-          background: '#12121f',
-          border: `1px solid ${typeColor}40`,
-          borderRadius: '24px',
-          width: '100%',
-          maxWidth: '520px',
-          maxHeight: '80vh',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: `0 20px 60px rgba(0,0,0,0.8), 0 0 30px ${typeColor}20`,
-          outline: 'none',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Box
-          sx={{
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }}>
-            {language === 'fr' ? 'Capacités' : 'Moves'} ({moves.length})
-          </Typography>
-          <IconButton
-            onClick={onClose}
-            aria-label="Fermer"
-            sx={{
-              color: 'rgba(255,255,255,0.5)',
-              p: 0.8,
-              '&:hover': { color: '#fff', background: 'rgba(255,255,255,0.08)' },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        <Box sx={{ overflow: 'auto', padding: '20px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {moves.map((move, index) => (
-            <Chip
-              key={index}
-              label={move.replace(/-/g, ' ')}
-              sx={{
-                backgroundColor: `${typeColor}20`,
-                color: 'rgba(255,255,255,0.9)',
-                border: `1px solid ${typeColor}40`,
-                fontFamily: 'Poppins, sans-serif',
-                fontSize: '0.75rem',
-                textTransform: 'capitalize',
-                fontWeight: 500,
-              }}
-            />
-          ))}
+    <Box sx={pageSx} role="status" aria-busy="true">
+      <Shimmer sx={{ width: 130, height: 42, borderRadius: 999, mb: 2.5 }} />
+      <Shimmer sx={{ height: { xs: 560, md: 500 }, borderRadius: 'var(--radius-xl)' }} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5, mt: 2.5 }}>
+        <Shimmer sx={{ height: 320, borderRadius: 'var(--radius-lg)' }} />
+        <Shimmer sx={{ height: 320, borderRadius: 'var(--radius-lg)' }} />
+      </Box>
+    </Box>
+  );
+}
+
+export default function PokemonDetail() {
+  const { t, language } = useTranslation();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { getPokemonById, loading } = usePokemon();
+  const [shiny, setShiny] = useState(false);
+
+  const pokemon = getPokemonById(id);
+  const details = usePokemonDetails(pokemon?.id);
+  const [rating, setRating] = useRating(pokemon?.id ?? 0);
+
+  const previous = pokemon ? getPokemonById(pokemon.id - 1) : null;
+  const next = pokemon ? getPokemonById(pokemon.id + 1) : null;
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  // Flèches ← / → : Pokémon précédent / suivant.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+      if (isTypingTarget(event.target) || document.querySelector('.MuiModal-root')) return;
+      if (event.key === 'ArrowLeft' && previous) navigate(`/pokemon/${previous.id}`);
+      if (event.key === 'ArrowRight' && next) navigate(`/pokemon/${next.id}`);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [previous, next, navigate]);
+
+  if (loading) return <DetailSkeleton />;
+
+  if (!pokemon) {
+    return (
+      <Box sx={{ maxWidth: 560, mx: 'auto', my: { xs: 8, md: 12 }, px: 3, textAlign: 'center' }}>
+        <Typography component="h1" sx={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '2rem', mb: 1 }}>
+          {t('pokemonNotFound')}
+        </Typography>
+        <Typography sx={{ color: 'var(--text-muted)', mb: 3.5 }}>{t('pokemonNotFoundDesc', { id })}</Typography>
+        <Box component={Link} to="/" sx={{ ...pillButtonSx, textDecoration: 'none' }}>
+          <ArrowBackIcon />
+          {t('backToPokedex')}
         </Box>
       </Box>
-    </Modal>
+    );
+  }
+
+  const types = pokemon.types?.length ? pokemon.types : ['normal'];
+  const name = getPokemonName(pokemon, language);
+  const genus = details.species?.genus?.[language] || details.species?.genus?.en;
+  const flavor = details.species?.flavor?.[language] || details.species?.flavor?.en;
+  const japaneseName = pokemon.names?.ja;
+  const rarity = details.species?.isMythical ? t('mythical') : details.species?.isLegendary ? t('legendary') : null;
+  const cryUrl = details.core?.cry;
+
+  const playCry = () => {
+    if (!cryUrl) return;
+    try {
+      const audio = new Audio(cryUrl);
+      audio.volume = 0.35;
+      audio.play().catch(() => {});
+    } catch (e) {
+      // Lecture audio indisponible : sans conséquence.
+    }
+  };
+
+  return (
+    <Box
+      sx={pageSx}
+      style={{ '--type': getTypeColor(types[0]), '--type-2': getTypeColor(types[1] || types[0]) }}
+    >
+      {/* Navigation */}
+      <Box component="nav" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 2.5 }}>
+        <Box component={Link} to="/" sx={{ ...pillButtonSx, textDecoration: 'none' }}>
+          <ArrowBackIcon />
+          {t('appTitle')}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <NeighborLink pokemon={previous} direction="prev" />
+          <NeighborLink pokemon={next} direction="next" />
+        </Box>
+      </Box>
+
+      {/* Hero */}
+      <Box component="section" sx={heroSx}>
+        {japaneseName && (
+          <Box
+            aria-hidden="true"
+            lang="ja"
+            sx={{
+              position: 'absolute',
+              top: { xs: 8, md: 4 },
+              right: { xs: 12, md: 28 },
+              zIndex: -1,
+              fontWeight: 800,
+              fontSize: { xs: '3.2rem', sm: '5rem', md: '6.5rem' },
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+              color: 'color-mix(in srgb, var(--type) 26%, transparent)',
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+          >
+            {japaneseName}
+          </Box>
+        )}
+
+        <Box sx={{ gridArea: 'text', minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: '1.15rem',
+                letterSpacing: '0.04em',
+                color: 'var(--text-muted)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {formatId(pokemon.id)}
+            </Typography>
+            {rarity && (
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  height: 24,
+                  px: 1.1,
+                  borderRadius: 999,
+                  background: 'color-mix(in srgb, var(--star) 22%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--star) 55%, transparent)',
+                  color: 'var(--text)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                <StarIcon sx={{ fontSize: 13, color: 'var(--star)' }} />
+                {rarity}
+              </Box>
+            )}
+          </Box>
+
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: { xs: '2.5rem', sm: '3.3rem', md: '4rem' },
+              lineHeight: 1.02,
+              letterSpacing: '-0.02em',
+              textTransform: 'capitalize',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {name}
+          </Typography>
+
+          <Box sx={{ minHeight: 26, mt: 0.75 }}>
+            {genus ? (
+              <Typography sx={{ color: 'var(--text-muted)', fontSize: '1.02rem', fontWeight: 500 }}>{genus}</Typography>
+            ) : (
+              details.loading && <Shimmer sx={{ width: 150, height: 18, mt: 0.5 }} />
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+            {types.map((type) => (
+              <TypeBadge key={type} type={type} size="lg" />
+            ))}
+          </Box>
+
+          {flavor ? (
+            <Typography sx={{ mt: 2.5, maxWidth: 540, fontSize: '1.02rem', lineHeight: 1.65, textWrap: 'pretty' }}>
+              {flavor}
+            </Typography>
+          ) : (
+            details.loading && (
+              <Box sx={{ mt: 2.5, maxWidth: 540 }} aria-busy="true">
+                <Shimmer sx={{ height: 14, mb: 1.25 }} />
+                <Shimmer sx={{ height: 14, mb: 1.25, width: '92%' }} />
+                <Shimmer sx={{ height: 14, width: '60%' }} />
+              </Box>
+            )
+          )}
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, mt: 3.5 }}>
+            <FavoriteButton pokemonId={pokemon.id} variant="pill" />
+            <CompareButton pokemon={pokemon} />
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setShiny((prev) => !prev)}
+              aria-pressed={shiny}
+              aria-label={shiny ? t('showNormal') : t('showShiny')}
+              sx={{
+                ...pillButtonSx,
+                ...(shiny && {
+                  background: 'var(--star)',
+                  borderColor: 'var(--star)',
+                  color: '#15171f',
+                  '&:hover': { transform: 'translateY(-2px)', borderColor: 'var(--star)' },
+                }),
+              }}
+            >
+              <AutoAwesomeIcon />
+              {t('shiny')}
+            </Box>
+            <Tooltip title={t('playCry')}>
+              <span>
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={playCry}
+                  disabled={!cryUrl}
+                  aria-label={t('playCry')}
+                  sx={{ ...pillButtonSx, width: 42, px: 0, justifyContent: 'center' }}
+                >
+                  <VolumeUpIcon />
+                </Box>
+              </span>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            gridArea: 'art',
+            position: 'relative',
+            display: 'grid',
+            placeItems: 'center',
+            minWidth: 0,
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              width: '92%',
+              maxWidth: 440,
+              aspectRatio: '1 / 1',
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle, color-mix(in srgb, var(--type) 60%, transparent) 0%, transparent 66%)',
+              opacity: 0.6,
+              zIndex: -1,
+            },
+          }}
+        >
+          <PokeballMark
+            outline
+            size={100}
+            style={{
+              position: 'absolute',
+              width: 'min(88%, 400px)',
+              height: 'auto',
+              zIndex: -1,
+              color: 'var(--type)',
+              opacity: 0.1,
+              animation: 'spin-slow 70s linear infinite',
+            }}
+          />
+          <Box sx={{ width: { xs: '68%', sm: '52%', md: '88%' }, maxWidth: 380, animation: 'float-y 6s ease-in-out infinite' }}>
+            <PokemonArtwork
+              pokemon={pokemon}
+              shiny={shiny}
+              alt={name}
+              loading="eager"
+              sx={{ width: '100%', filter: 'drop-shadow(0 26px 28px rgba(0, 0, 0, 0.38))' }}
+            />
+          </Box>
+        </Box>
+
+        <Box
+          component="dl"
+          sx={{
+            gridArea: 'facts',
+            m: 0,
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: '0.7fr 0.7fr 1.5fr 1.1fr' },
+            gap: { xs: 1.25, md: 1.75 },
+          }}
+        >
+          <Box sx={factSx}>
+            <Typography component="dt" sx={factLabelSx}>
+              {t('height')}
+            </Typography>
+            <Typography component="dd" sx={{ ...factValueSx, m: 0 }}>
+              {formatHeight(pokemon.height, language)}
+            </Typography>
+          </Box>
+          <Box sx={factSx}>
+            <Typography component="dt" sx={factLabelSx}>
+              {t('weight')}
+            </Typography>
+            <Typography component="dd" sx={{ ...factValueSx, m: 0 }}>
+              {formatWeight(pokemon.weight, language)}
+            </Typography>
+          </Box>
+          <Box sx={{ ...factSx, gridColumn: { xs: '1 / -1', md: 'auto' } }}>
+            <Typography component="dt" sx={factLabelSx}>
+              {t('abilities')}
+            </Typography>
+            <Box component="dd" sx={{ m: 0 }}>
+              <AbilityList details={details} />
+            </Box>
+          </Box>
+          <Box sx={{ ...factSx, gridColumn: { xs: '1 / -1', md: 'auto' } }}>
+            <Typography component="dt" sx={factLabelSx} id="rating-label">
+              {t('myRating')}
+            </Typography>
+            <Box component="dd" sx={{ m: 0, display: 'flex', alignItems: 'center', minHeight: 30 }}>
+              <Rating
+                name={`pokemon-rating-${pokemon.id}`}
+                aria-labelledby="rating-label"
+                value={rating}
+                onChange={(event, value) => setRating(value || 0)}
+                sx={{
+                  fontSize: '1.7rem',
+                  '& .MuiRating-iconFilled': { color: 'var(--star)' },
+                  '& .MuiRating-iconHover': { color: 'var(--star)' },
+                  '& .MuiRating-iconEmpty': { color: 'var(--text-faint)' },
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {details.failed && (
+        <Box
+          role="alert"
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+            mt: 2.5,
+            p: 2,
+            pl: 2.5,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--accent-soft)',
+            border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontWeight: 600 }}>{t('detailsUnavailable')}</Typography>
+            <Typography sx={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{t('detailsUnavailableDesc')}</Typography>
+          </Box>
+          <Box component="button" type="button" onClick={details.retry} sx={pillButtonSx}>
+            <RefreshIcon />
+            {t('retry')}
+          </Box>
+        </Box>
+      )}
+
+      {/* Sections */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
+          gap: 2.5,
+          mt: 2.5,
+        }}
+      >
+        <StatsCard loading={details.loading} stats={details.core?.stats} total={details.core?.total} />
+        <DefensesCard types={types} />
+        <EvolutionCard
+          pokemon={pokemon}
+          evolution={details.loading ? undefined : details.species ? details.evolution : null}
+          sx={{ gridColumn: '1 / -1' }}
+        />
+        <MovesCard moves={pokemon.moves || []} sx={{ gridColumn: '1 / -1' }} />
+      </Box>
+
+      <SimilarPokemon pokemon={pokemon} />
+    </Box>
   );
 }

@@ -1,42 +1,34 @@
 import React from 'react';
-import { Box, Skeleton } from '@mui/material';
+import { Box } from '@mui/material';
+
+const shimmerSx = {
+  borderRadius: '10px',
+  background:
+    'linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%)',
+  backgroundSize: '200% 100%',
+  animation: 'shimmer 1.6s linear infinite',
+};
+
+export const Shimmer = ({ sx, ...props }) => <Box aria-hidden="true" sx={{ ...shimmerSx, ...sx }} {...props} />;
 
 export default function PokemonCardSkeleton() {
   return (
     <Box
+      aria-hidden="true"
       sx={{
-        width: '210px',
-        padding: '16px',
-        margin: '10px',
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-        borderRadius: '20px',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        p: { xs: 1.5, sm: 2 },
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
       }}
     >
-      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-        <Skeleton variant="text" width={40} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
-        <Skeleton variant="circular" width={24} height={24} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+      <Shimmer sx={{ width: 44, height: 16, mb: 2 }} />
+      <Shimmer sx={{ width: '70%', aspectRatio: '1 / 1', mx: 'auto', borderRadius: '50%', mb: 2 }} />
+      <Shimmer sx={{ width: '60%', height: 20, mb: 1.25 }} />
+      <Box sx={{ display: 'flex', gap: 0.75 }}>
+        <Shimmer sx={{ width: 62, height: 22, borderRadius: 999 }} />
+        <Shimmer sx={{ width: 52, height: 22, borderRadius: 999 }} />
       </Box>
-
-      <Skeleton
-        variant="rectangular"
-        width={100}
-        height={100}
-        sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '12px', my: 1.5 }}
-      />
-
-      <Skeleton variant="text" width={110} height={26} sx={{ bgcolor: 'rgba(255,255,255,0.12)', mb: 1 }} />
-
-      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-        <Skeleton variant="rounded" width={55} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '10px' }} />
-        <Skeleton variant="rounded" width={55} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '10px' }} />
-      </Box>
-
-      <Skeleton variant="text" width={90} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.06)', mt: 0.5 }} />
-      <Skeleton variant="rounded" width={80} height={26} sx={{ bgcolor: 'rgba(255,255,255,0.08)', borderRadius: '14px', mt: 1 }} />
     </Box>
   );
 }

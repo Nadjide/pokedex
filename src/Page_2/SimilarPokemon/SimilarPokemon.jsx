@@ -1,13 +1,35 @@
-import React, { useContext } from 'react';
-import { Box, Typography } from '@mui/material';
-import { LanguageContext } from '../../Langue/LanguageContext';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { TypesContext } from '../../Page_1/TypesContext/TypesContext';
+import { Box, Typography } from '@mui/material';
 import { usePokemon } from '../../context/PokemonContext.jsx';
+import { useTranslation } from '../../i18n/translations.js';
+import { getTypeColor } from '../../Theme/typeColors.js';
+import { formatId, getPokemonName } from '../../utils/pokemon.js';
+import PokemonArtwork from '../../components/PokemonArtwork.jsx';
+import TypeBadge from '../../components/TypeBadge.jsx';
+
+const miniCardSx = {
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+  p: 1.5,
+  borderRadius: 'var(--radius-md)',
+  textDecoration: 'none',
+  color: 'var(--text)',
+  background:
+    'linear-gradient(165deg, color-mix(in srgb, var(--type) var(--card-tint), var(--surface)) 0%, var(--surface) 75%)',
+  border: '1px solid color-mix(in srgb, var(--type) 24%, var(--border))',
+  transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    borderColor: 'color-mix(in srgb, var(--type) 60%, transparent)',
+    boxShadow: '0 18px 32px -18px color-mix(in srgb, var(--type) 70%, transparent)',
+  },
+  '&:hover img': { transform: 'scale(1.08)' },
+};
 
 function SimilarPokemon({ pokemon }) {
-  const { language } = useContext(LanguageContext);
-  const typesData = useContext(TypesContext) || {};
+  const { t, language } = useTranslation();
   const { getSimilarPokemons } = usePokemon();
 
   if (!pokemon) return null;
@@ -15,81 +37,73 @@ function SimilarPokemon({ pokemon }) {
   const similarPokemons = getSimilarPokemons(pokemon, 12);
   if (similarPokemons.length === 0) return null;
 
-  const primaryType = pokemon.types?.[0] || 'normal';
-  const typeColor = typesData[primaryType]?.backgroundColor || '#888';
-
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box component="section" sx={{ mt: 5 }}>
       <Typography
-        variant="h6"
-        sx={{
-          color: 'rgba(255,255,255,0.8)',
-          fontFamily: 'Poppins, sans-serif',
-          fontWeight: 700,
-          mb: 2,
-          textAlign: 'left',
-          fontSize: '1.05rem',
-        }}
+        component="h2"
+        sx={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.35rem', mb: 2 }}
       >
-        {language === 'fr' ? 'Pokémons similaires' : 'Similar Pokémon'}
+        {t('similarPokemon')}
       </Typography>
       <Box
+        component="ul"
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))',
-          gap: '12px',
+          gridAutoFlow: 'column',
+          gridAutoColumns: { xs: '148px', sm: '168px' },
+          gap: 1.75,
+          m: 0,
+          mx: { xs: -2, md: 0 },
+          px: { xs: 2, md: 0 },
+          pt: 1,
+          pb: 2,
+          listStyle: 'none',
+          overflowX: 'auto',
+          scrollSnapType: 'x proximity',
+          scrollPaddingInline: '16px',
         }}
       >
         {similarPokemons.map((p) => {
-          const pName = p.names?.[language] || p.names?.fr || p.names?.en || `#${p.id}`;
+          const types = p.types?.length ? p.types : ['normal'];
           return (
-            <Link to={`/pokemon/${p.id}`} key={p.id} style={{ textDecoration: 'none' }}>
+            <Box component="li" key={p.id} sx={{ scrollSnapAlign: 'start' }}>
               <Box
-                sx={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '16px',
-                  padding: '12px 8px',
-                  textAlign: 'center',
-                  transition: 'all 0.25s ease',
-                  '&:hover': {
-                    background: `${typeColor}20`,
-                    border: `1px solid ${typeColor}60`,
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 8px 20px ${typeColor}25`,
-                  },
-                }}
+                component={Link}
+                to={`/pokemon/${p.id}`}
+                style={{ '--type': getTypeColor(types[0]) }}
+                sx={miniCardSx}
               >
-                <img
-                  src={p.image}
-                  alt={pName}
-                  loading="lazy"
-                  decoding="async"
-                  style={{ width: '70px', height: '70px', objectFit: 'contain', imageRendering: 'pixelated' }}
-                />
                 <Typography
                   sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    fontSize: '0.72rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {formatId(p.id)}
+                </Typography>
+                <PokemonArtwork pokemon={p} alt="" sx={{ width: '78%', mx: 'auto', my: 0.75 }} />
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: '0.98rem',
                     textTransform: 'capitalize',
-                    mt: 0.5,
+                    lineHeight: 1.2,
+                    mb: 1,
                   }}
                 >
-                  {pName}
+                  {getPokemonName(p, language)}
                 </Typography>
-                <Typography
-                  sx={{
-                    color: 'rgba(255,255,255,0.4)',
-                    fontSize: '0.62rem',
-                    fontFamily: 'Poppins, sans-serif',
-                  }}
-                >
-                  #{String(p.id).padStart(3, '0')}
-                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 'auto' }}>
+                  {types.map((type) => (
+                    <TypeBadge key={type} type={type} size="sm" />
+                  ))}
+                </Box>
               </Box>
-            </Link>
+            </Box>
           );
         })}
       </Box>

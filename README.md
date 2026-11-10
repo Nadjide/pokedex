@@ -12,28 +12,34 @@ Une application Pokédex moderne, fluide et performante développée avec **Reac
 
 ## ✨ Fonctionnalités Clés
 
-- 🎨 **Design Glassmorphism Dark Theme** : Interface sombre moderne avec effets de flou d'arrière-plan, bordures subtiles et accents colorés dynamiques selon les types élémentaires.
-- 🔍 **Recherche & Filtrage Avancés** :
-  - Recherche instantanée par nom (multilingue) ou par numéro Pokédex (`#25`, `Pikachu`).
-  - Filtrage multi-types combinable (ET logique) avec puces aux couleurs officielles des types.
-  - Sélecteur de générations.
-  - Multiples options de tri : numéro croissant/décroissant, nom A-Z/Z-A, favoris en tête ⭐, poids et taille.
-- 📊 **Comparateur & Graphique Radar Interactif** :
-  - Dock escamotable permettant de sélectionner et comparer 2 Pokémon côte-à-côte.
-  - Graphique Radar interactif (PV, Attaque, Défense, Attaque Spé, Défense Spé, Vitesse) intégrant les statistiques de l'API PokeAPI avec fallback local.
-- ⭐ **Gestion des Favoris & Notes** :
-  - Ajout/retrait en favoris synchronisé automatiquement dans `localStorage`.
-  - Système de notation par étoiles par Pokémon.
-- 🌐 **Internationalisation Complète (FR / EN)** :
-  - Bascule instantanée entre Français 🇫🇷 et Anglais 🇬🇧.
-  - Traduction de l'intégralité des libellés de l'interface, des types et des noms des Pokémon.
-- ⚡ **Architecture Optimisée & Zéro Redondance Réseau** :
-  - `PokemonContext` centralisé avec mise en cache mémoire : chargement unique de la base de données.
-  - Affichage instantané (0 ms de latence) lors de la navigation vers les détails ou les Pokémon similaires.
-  - Code-splitting dynamique (`manualChunks`) via Vite (bundle principal réduit à < 30 kB).
-  - Écrans de chargement animés avec **Skeletons MUI** et gestion complète des erreurs réseau / page 404.
-- 🧪 **Suite de Tests Vitest** :
-  - Tests unitaires et d'intégration validant le rendu, le filtrage, la gestion des favoris et la logique de comparaison.
+- 🎨 **Design system & thèmes clair / sombre** :
+  - Tokens CSS centralisés (`src/index.css`) : couleurs, rayons, ombres, typographies (Outfit + Inter).
+  - Bascule clair / sombre mémorisée, sans flash au chargement.
+  - Illustrations officielles haute définition, cartes teintées par le type principal de chaque Pokémon.
+- 🏠 **Accueil** :
+  - Hero avec « Pokémon du jour » (change chaque jour) et bouton « Pokémon au hasard ».
+  - Grille responsive (2 colonnes sur mobile), squelettes de chargement, états vides et d'erreur soignés.
+- 🔍 **Recherche & filtres** :
+  - Barre de recherche flottante, toujours accessible ; raccourci clavier `/`, `Échap` pour effacer.
+  - Recherche par nom (insensible aux accents et à la casse, dans toutes les langues) ou par numéro (`25`, `#25`).
+  - Filtres par type cumulables (2 maximum), vue « Favoris uniquement ».
+  - Tris : numéro, nom, favoris en tête, poids, taille.
+- 📖 **Fiche Pokémon complète** :
+  - Description du Pokédex, catégorie, talents (avec talent caché), taille, poids.
+  - Statistiques de base en barres, **faiblesses / résistances / immunités** calculées depuis la table des types.
+  - **Chaîne d'évolution** avec conditions (niveau, pierre, échange) et branches (Évoli).
+  - Version chromatique, cri du Pokémon, capacités filtrables, Pokémon similaires.
+  - Navigation précédent / suivant (boutons ou flèches `←` `→`).
+- 📊 **Comparateur** :
+  - Dock flottant pour sélectionner 2 Pokémon, duel stat par stat et graphique radar.
+- ⭐ **Favoris & notes** : synchronisés dans `localStorage`, note personnelle sur chaque fiche.
+- 🌐 **Internationalisation (FR / EN)** : interface, types et noms des Pokémon ; langue mémorisée.
+- ♿ **Accessibilité** : navigation clavier, lien d'évitement, contrastes vérifiés sur les badges de type, respect de `prefers-reduced-motion`.
+- ⚡ **Performance** :
+  - `PokemonContext` centralisé : la base n'est chargée qu'une fois.
+  - Données détaillées (PokéAPI) chargées à la demande et mises en cache pour la session.
+  - Code-splitting (`manualChunks`) : fiche détail et graphiques hors du bundle initial.
+- 🧪 **Suite de Tests Vitest** : rendu, recherche, favoris, langue, table des types, filtrage, tri et chaînes d'évolution.
 
 ---
 
@@ -65,6 +71,18 @@ npm install
 
 ---
 
+## 🔌 Sources de données
+
+| Source | Contenu |
+| :--- | :--- |
+| `pokedex-jgabriele.vercel.app` | Liste des 151 Pokémon de Kanto (noms multilingues, types, taille, poids, capacités) et traductions des types. |
+| [PokéAPI](https://pokeapi.co/) | Statistiques de base, talents, descriptions, chaînes d'évolution, cris. |
+| Sprites PokéAPI (GitHub) | Illustrations officielles (normales et chromatiques). |
+
+Si PokéAPI est injoignable, la fiche reste consultable : les blocs concernés affichent « indisponible » avec un bouton pour réessayer.
+
+---
+
 ## 📁 Architecture du Projet
 
 ```text
@@ -72,26 +90,33 @@ pokedex/
 ├── public/                     # Assets statiques, manifest PWA, favicon
 ├── src/
 │   ├── AnimatedRoutes.jsx      # Routage avec transitions Framer Motion & Code Splitting
-│   ├── App.jsx                 # Point d'entrée avec composition des Providers
-│   ├── FavoritesContext.jsx    # Gestionnaire centralisé des favoris et localStorage
+│   ├── App.jsx                 # Composition des Providers et structure de page
+│   ├── index.css               # Tokens du design system (thèmes clair / sombre), animations
+│   ├── FavoritesContext.jsx    # Favoris et localStorage
+│   ├── api/
+│   │   └── pokeapi.js          # Accès PokéAPI avec cache (stats, espèce, évolutions, talents)
 │   ├── context/
 │   │   └── PokemonContext.jsx  # Cache central des données Pokémon & types
+│   ├── data/
+│   │   └── typeChart.js        # Table des types et calcul des faiblesses / résistances
+│   ├── hooks/                  # usePokemonDetails, usePokemonStats, useRating
 │   ├── i18n/
-│   │   └── translations.js     # Dictionnaire de traduction bilingue (FR/EN)
-│   ├── Theme/
-│   │   └── typeColors.js       # Palette des couleurs élémentaires Pokémon
+│   │   └── translations.js     # Dictionnaire bilingue (FR/EN) et hook useTranslation
+│   ├── Theme/                  # Thème MUI, bascule clair / sombre, couleurs des types
+│   ├── utils/                  # Formatage, recherche et tri (fonctions pures testées)
 │   ├── components/
-│   │   ├── AdvancedSearch/     # Barre de recherche & filtres multi-critères
-│   │   ├── ComparisonDock/     # Tiroir escamotable de comparaison
-│   │   ├── PokemonRadarChart/  # Visualisation graphique des stats avec Recharts
-│   │   └── FilterShield/       # Contexte de filtrage et tri
+│   │   ├── AdvancedSearch/     # Barre de recherche flottante & filtres par type
+│   │   ├── ComparisonDock/     # Dock flottant et panneau de comparaison
+│   │   ├── PokemonRadarChart/  # Graphique radar (Recharts)
+│   │   ├── FilterShield/       # Contexte de filtrage et tri
+│   │   └── …                   # TypeBadge, PokemonArtwork, FavoriteButton, CompareButton…
 │   ├── Page_1/
-│   │   ├── header/             # Barre de navigation et sélecteur de langue
-│   │   ├── PokemonCard/        # Carte Pokémon & Skeletons de chargement
-│   │   └── PokemonList/        # Grille principale avec tri réactif
+│   │   ├── header/             # En-tête : favoris, langue, thème
+│   │   ├── PokemonCard/        # Carte Pokémon & squelette de chargement
+│   │   └── PokemonList/        # Accueil : hero, recherche, grille
 │   └── Page_2/
-│       ├── PokemonDetails/     # Page de détails avec statistiques & modale des capacités
-│       └── SimilarPokemon/     # Suggestions instantanées par affinité de type
+│       ├── PokemonDetails/     # Fiche : hero, stats, défenses, évolutions, capacités
+│       └── SimilarPokemon/     # Suggestions par affinité de type
 ├── vite.config.js              # Configuration Vite avec optimisation des chunks vendor
 └── package.json
 ```
@@ -101,3 +126,7 @@ pokedex/
 ## 🛠️ Déploiement
 
 Le projet est configuré pour un déploiement continu sur **Vercel** (`vercel.json`) avec redirection SPA automatique vers `index.html`.
+
+---
+
+*Projet de fan non officiel. Pokémon et les noms des personnages sont des marques de Nintendo, Game Freak et Creatures.*

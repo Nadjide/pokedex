@@ -1,111 +1,350 @@
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { LanguageContext } from '../Langue/LanguageContext.jsx';
 
 export const translations = {
   fr: {
     appTitle: 'Pokédex',
-    searchPlaceholder: 'Rechercher par nom ou numéro (ex: 25, Pikachu)...',
+    skipToContent: 'Aller au contenu',
+    home: 'Accueil',
+
+    // En-tête
+    favorites: 'Favoris',
+    showFavorites: 'Afficher mes favoris',
+    language: 'Langue',
+    switchToLight: 'Passer au thème clair',
+    switchToDark: 'Passer au thème sombre',
+
+    // Accueil
+    heroEyebrow: 'Région de Kanto · Génération I',
+    heroTitleBefore: 'Explorez les',
+    heroTitleHighlight: '{count} Pokémon',
+    heroTitleAfter: 'de Kanto',
+    heroTitleFallback: 'Explorez le Pokédex de Kanto',
+    heroSubtitle:
+      'Statistiques, évolutions, faiblesses et comparateur : tout ce qu’il faut pour connaître chaque Pokémon sur le bout des doigts.',
+    randomPokemon: 'Pokémon au hasard',
+    pokemonOfTheDay: 'Pokémon du jour',
+    viewDetails: 'Voir la fiche',
+    statPokemon: 'Pokémon',
+    statTypes: 'Types',
+    statFavorites: 'Favoris',
+
+    // Recherche & filtres
+    searchPlaceholder: 'Rechercher par nom ou numéro (ex : 25, Pikachu)…',
+    searchLabel: 'Rechercher un Pokémon',
+    clearSearch: 'Effacer la recherche',
+    searchShortcut: 'Appuyez sur / pour rechercher',
     sortBy: 'Trier par',
-    generation: 'Génération',
-    filterByTypes: 'Filtrer par type(s) :',
+    sortShort: 'Tri',
+    favoritesOnly: 'Favoris uniquement',
+    filterByTypes: 'Filtrer par type',
+    filterByTypesHint: '2 types maximum',
     reset: 'Réinitialiser',
     resetAll: 'Réinitialiser les filtres',
     clearAllFilters: 'Effacer tous les filtres',
-    foundSingular: 'Pokémon trouvé',
-    foundPlural: 'Pokémons trouvés',
+    resultsOne: '{count} Pokémon',
+    resultsMany: '{count} Pokémon',
+    resultsOf: 'sur {total}',
     noPokemonFound: 'Aucun Pokémon ne correspond à votre recherche',
     noPokemonFoundDesc: 'Essayez de modifier vos filtres ou termes de recherche.',
+    noFavoritesYet: 'Aucun favori pour l’instant',
+    noFavoritesYetDesc: 'Touchez le cœur d’un Pokémon pour le retrouver ici.',
     retry: 'Réessayer',
     loadError: 'Impossible de charger les données du Pokédex.',
-    loadingStats: 'Chargement des statistiques...',
-    loadingChart: 'Chargement du graphique...',
+    loadErrorDesc: 'Vérifiez votre connexion puis réessayez.',
+
+    sortOptions: {
+      'id-asc': 'Numéro croissant',
+      'id-desc': 'Numéro décroissant',
+      'name-asc': 'Nom (A → Z)',
+      'name-desc': 'Nom (Z → A)',
+      favorites: 'Favoris d’abord',
+      'weight-desc': 'Les plus lourds',
+      'height-desc': 'Les plus grands',
+    },
+
+    // Cartes & actions
     compare: 'Comparer',
     selected: 'Sélectionné',
-    comparatorTitle: 'Comparateur de Pokémon',
-    clear: 'Vider',
-    selectSecondPokemon: 'Sélectionnez un 2ᵉ Pokémon pour comparer',
+    addToCompare: 'Ajouter au comparateur',
+    removeFromCompare: 'Retirer du comparateur',
     addFavorite: 'Ajouter aux favoris',
     removeFavorite: 'Retirer des favoris',
-    height: 'Taille',
-    weight: 'Poids',
-    moves: 'Capacités',
-    viewMoves: 'Voir les capacités',
-    similarPokemon: 'Pokémons similaires',
+    favorite: 'Favori',
+    myRating: 'Ma note',
+    ratedOutOf5: 'Noté {value}/5',
+
+    // Fiche détail
     back: 'Retour',
     backToPokedex: 'Retour au Pokédex',
+    previousPokemon: 'Pokémon précédent',
+    nextPokemon: 'Pokémon suivant',
     pokemonNotFound: 'Pokémon introuvable',
-    pokemonNotFoundDesc: "Aucun Pokémon ne correspond à l'identifiant",
-    sortOptions: {
-      idAsc: 'Numéro croissant (#1 → #151)',
-      idDesc: 'Numéro décroissant (#151 → #1)',
-      nameAsc: 'Nom (A → Z)',
-      nameDesc: 'Nom (Z → A)',
-      favorites: "Favoris d'abord ⭐",
-      weightDesc: 'Poids (Plus lourds)',
-      heightDesc: 'Taille (Plus grands)',
+    pokemonNotFoundDesc: 'Aucun Pokémon ne correspond à l’identifiant #{id}.',
+    height: 'Taille',
+    weight: 'Poids',
+    abilities: 'Talents',
+    hiddenAbility: 'Talent caché',
+    hiddenShort: 'caché',
+    legendary: 'Légendaire',
+    mythical: 'Fabuleux',
+    shiny: 'Chromatique',
+    showShiny: 'Afficher la version chromatique',
+    showNormal: 'Afficher la version normale',
+    playCry: 'Écouter le cri',
+    baseStats: 'Statistiques de base',
+    total: 'Total',
+    typeDefenses: 'Faiblesses et résistances',
+    typeDefensesHint: 'Dégâts subis selon le type de l’attaque',
+    weaknesses: 'Faiblesses',
+    resistances: 'Résistances',
+    immunities: 'Immunités',
+    none: 'Aucune',
+    evolutions: 'Évolutions',
+    noEvolution: 'Ce Pokémon n’a pas d’évolution dans le Pokédex de Kanto.',
+    moves: 'Capacités',
+    movesNote: 'Noms officiels anglais',
+    filterMoves: 'Filtrer les capacités…',
+    showAllMoves: 'Tout afficher ({count})',
+    showLessMoves: 'Réduire',
+    noMoveFound: 'Aucune capacité ne correspond.',
+    similarPokemon: 'Pokémon similaires',
+    detailsUnavailable: 'Données détaillées indisponibles',
+    detailsUnavailableDesc: 'Impossible de joindre PokéAPI pour le moment.',
+    statsUnavailable: 'Statistiques indisponibles pour le moment.',
+    unavailable: 'Indisponible',
+
+    stats: {
+      hp: 'PV',
+      attack: 'Attaque',
+      defense: 'Défense',
+      'special-attack': 'Atq. Spé.',
+      'special-defense': 'Déf. Spé.',
+      speed: 'Vitesse',
     },
+    statsShort: {
+      hp: 'PV',
+      attack: 'ATQ',
+      defense: 'DÉF',
+      'special-attack': 'ATQ SPÉ',
+      'special-defense': 'DÉF SPÉ',
+      speed: 'VIT',
+    },
+
+    evo: {
+      level: 'Niv. {level}',
+      trade: 'Échange',
+      friendship: 'Bonheur',
+      special: 'Condition spéciale',
+      items: {
+        'thunder-stone': 'Pierre Foudre',
+        'fire-stone': 'Pierre Feu',
+        'water-stone': 'Pierre Eau',
+        'leaf-stone': 'Pierre Plante',
+        'moon-stone': 'Pierre Lune',
+      },
+    },
+
+    // Comparateur
+    comparatorTitle: 'Comparateur',
+    clear: 'Vider',
+    close: 'Fermer',
+    remove: 'Retirer',
+    selectSecondPokemon: 'Sélectionnez un 2ᵉ Pokémon pour lancer le duel',
+    loadingStats: 'Chargement des statistiques…',
+    loadingChart: 'Chargement du graphique…',
+    openComparator: 'Ouvrir le comparateur',
+    versus: 'VS',
+
+    // 404 & pied de page
+    pageNotFound: 'Page introuvable',
+    pageNotFoundDesc: 'Cette page s’est enfuie dans les hautes herbes.',
+    backHome: 'Retour à l’accueil',
+    footerData: 'Données : PokéAPI',
+    footerDisclaimer:
+      'Projet de fan non officiel. Pokémon et les noms des personnages sont des marques de Nintendo, Game Freak et Creatures.',
   },
+
   en: {
     appTitle: 'Pokédex',
-    searchPlaceholder: 'Search by name or number (e.g. 25, Pikachu)...',
+    skipToContent: 'Skip to content',
+    home: 'Home',
+
+    favorites: 'Favorites',
+    showFavorites: 'Show my favorites',
+    language: 'Language',
+    switchToLight: 'Switch to light theme',
+    switchToDark: 'Switch to dark theme',
+
+    heroEyebrow: 'Kanto region · Generation I',
+    heroTitleBefore: 'Explore all',
+    heroTitleHighlight: '{count} Pokémon',
+    heroTitleAfter: 'of Kanto',
+    heroTitleFallback: 'Explore the Kanto Pokédex',
+    heroSubtitle:
+      'Stats, evolutions, weaknesses and a head-to-head comparator: everything you need to know every Pokémon inside out.',
+    randomPokemon: 'Random Pokémon',
+    pokemonOfTheDay: 'Pokémon of the day',
+    viewDetails: 'View entry',
+    statPokemon: 'Pokémon',
+    statTypes: 'Types',
+    statFavorites: 'Favorites',
+
+    searchPlaceholder: 'Search by name or number (e.g. 25, Pikachu)…',
+    searchLabel: 'Search a Pokémon',
+    clearSearch: 'Clear search',
+    searchShortcut: 'Press / to search',
     sortBy: 'Sort by',
-    generation: 'Generation',
-    filterByTypes: 'Filter by type(s):',
+    sortShort: 'Sort',
+    favoritesOnly: 'Favorites only',
+    filterByTypes: 'Filter by type',
+    filterByTypesHint: 'up to 2 types',
     reset: 'Reset',
     resetAll: 'Reset filters',
     clearAllFilters: 'Clear all filters',
-    foundSingular: 'Pokémon found',
-    foundPlural: 'Pokémon found',
+    resultsOne: '{count} Pokémon',
+    resultsMany: '{count} Pokémon',
+    resultsOf: 'of {total}',
     noPokemonFound: 'No Pokémon matches your search',
     noPokemonFoundDesc: 'Try adjusting your filters or search terms.',
+    noFavoritesYet: 'No favorites yet',
+    noFavoritesYetDesc: 'Tap the heart on any Pokémon to find it here.',
     retry: 'Retry',
     loadError: 'Failed to load Pokédex data.',
-    loadingStats: 'Loading statistics...',
-    loadingChart: 'Loading chart...',
+    loadErrorDesc: 'Check your connection and try again.',
+
+    sortOptions: {
+      'id-asc': 'Number ascending',
+      'id-desc': 'Number descending',
+      'name-asc': 'Name (A → Z)',
+      'name-desc': 'Name (Z → A)',
+      favorites: 'Favorites first',
+      'weight-desc': 'Heaviest',
+      'height-desc': 'Tallest',
+    },
+
     compare: 'Compare',
     selected: 'Selected',
-    comparatorTitle: 'Pokémon Comparator',
-    clear: 'Clear',
-    selectSecondPokemon: 'Select a 2nd Pokémon to compare',
+    addToCompare: 'Add to comparator',
+    removeFromCompare: 'Remove from comparator',
     addFavorite: 'Add to favorites',
     removeFavorite: 'Remove from favorites',
-    height: 'Height',
-    weight: 'Weight',
-    moves: 'Moves',
-    viewMoves: 'View moves',
-    similarPokemon: 'Similar Pokémon',
+    favorite: 'Favorite',
+    myRating: 'My rating',
+    ratedOutOf5: 'Rated {value}/5',
+
     back: 'Back',
     backToPokedex: 'Back to Pokédex',
+    previousPokemon: 'Previous Pokémon',
+    nextPokemon: 'Next Pokémon',
     pokemonNotFound: 'Pokémon not found',
-    pokemonNotFoundDesc: 'No Pokémon matches identifier',
-    sortOptions: {
-      idAsc: 'Number ascending (#1 → #151)',
-      idDesc: 'Number descending (#151 → #1)',
-      nameAsc: 'Name (A → Z)',
-      nameDesc: 'Name (Z → A)',
-      favorites: 'Favorites first ⭐',
-      weightDesc: 'Weight (Heaviest)',
-      heightDesc: 'Height (Tallest)',
+    pokemonNotFoundDesc: 'No Pokémon matches identifier #{id}.',
+    height: 'Height',
+    weight: 'Weight',
+    abilities: 'Abilities',
+    hiddenAbility: 'Hidden ability',
+    hiddenShort: 'hidden',
+    legendary: 'Legendary',
+    mythical: 'Mythical',
+    shiny: 'Shiny',
+    showShiny: 'Show shiny version',
+    showNormal: 'Show regular version',
+    playCry: 'Play cry',
+    baseStats: 'Base stats',
+    total: 'Total',
+    typeDefenses: 'Weaknesses and resistances',
+    typeDefensesHint: 'Damage taken by attack type',
+    weaknesses: 'Weaknesses',
+    resistances: 'Resistances',
+    immunities: 'Immunities',
+    none: 'None',
+    evolutions: 'Evolutions',
+    noEvolution: 'This Pokémon has no evolution in the Kanto Pokédex.',
+    moves: 'Moves',
+    movesNote: 'Official English names',
+    filterMoves: 'Filter moves…',
+    showAllMoves: 'Show all ({count})',
+    showLessMoves: 'Show less',
+    noMoveFound: 'No move matches.',
+    similarPokemon: 'Similar Pokémon',
+    detailsUnavailable: 'Detailed data unavailable',
+    detailsUnavailableDesc: 'PokéAPI cannot be reached right now.',
+    statsUnavailable: 'Stats are unavailable right now.',
+    unavailable: 'Unavailable',
+
+    stats: {
+      hp: 'HP',
+      attack: 'Attack',
+      defense: 'Defense',
+      'special-attack': 'Sp. Atk',
+      'special-defense': 'Sp. Def',
+      speed: 'Speed',
     },
+    statsShort: {
+      hp: 'HP',
+      attack: 'ATK',
+      defense: 'DEF',
+      'special-attack': 'SP. ATK',
+      'special-defense': 'SP. DEF',
+      speed: 'SPD',
+    },
+
+    evo: {
+      level: 'Lv. {level}',
+      trade: 'Trade',
+      friendship: 'Friendship',
+      special: 'Special condition',
+      items: {
+        'thunder-stone': 'Thunder Stone',
+        'fire-stone': 'Fire Stone',
+        'water-stone': 'Water Stone',
+        'leaf-stone': 'Leaf Stone',
+        'moon-stone': 'Moon Stone',
+      },
+    },
+
+    comparatorTitle: 'Comparator',
+    clear: 'Clear',
+    close: 'Close',
+    remove: 'Remove',
+    selectSecondPokemon: 'Select a 2nd Pokémon to start the duel',
+    loadingStats: 'Loading stats…',
+    loadingChart: 'Loading chart…',
+    openComparator: 'Open comparator',
+    versus: 'VS',
+
+    pageNotFound: 'Page not found',
+    pageNotFoundDesc: 'This page fled into the tall grass.',
+    backHome: 'Back to home',
+    footerData: 'Data: PokéAPI',
+    footerDisclaimer:
+      'Unofficial fan project. Pokémon and character names are trademarks of Nintendo, Game Freak and Creatures.',
   },
+};
+
+const resolve = (dictionary, key) => {
+  let current = dictionary;
+  for (const part of key.split('.')) {
+    if (current && current[part] !== undefined) current = current[part];
+    else return undefined;
+  }
+  return current;
+};
+
+const interpolate = (text, vars) =>
+  vars && typeof text === 'string'
+    ? text.replace(/\{(\w+)\}/g, (match, name) => (vars[name] !== undefined ? vars[name] : match))
+    : text;
+
+export const translate = (language, key, vars) => {
+  const lang = translations[language] ? language : 'fr';
+  const value = resolve(translations[lang], key) ?? resolve(translations.fr, key);
+  return value === undefined ? key : interpolate(value, vars);
 };
 
 export const useTranslation = () => {
   const { language } = useContext(LanguageContext);
   const lang = translations[language] ? language : 'fr';
-  return {
-    t: (key) => {
-      const keys = key.split('.');
-      let current = translations[lang];
-      for (const k of keys) {
-        if (current && current[k] !== undefined) {
-          current = current[k];
-        } else {
-          return key;
-        }
-      }
-      return current;
-    },
-    language: lang,
-  };
+  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
+  return { t, language: lang };
 };

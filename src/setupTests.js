@@ -23,4 +23,7 @@ if (typeof window !== 'undefined') {
       unobserve() {}
       disconnect() {}
     };
+
+  // jsdom n'implémente pas le défilement de la fenêtre
+  window.scrollTo = () => {};
 }

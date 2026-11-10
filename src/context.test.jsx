@@ -81,4 +81,26 @@ describe('FilterContext', () => {
     expect(result.current.searchTerm).toBe('');
     expect(result.current.sortOrder).toBe('id-asc');
   });
+
+  test('keeps at most two type filters, dropping the oldest', () => {
+    const wrapper = ({ children }) => <FilterProvider>{children}</FilterProvider>;
+    const { result } = renderHook(() => useFilter(), { wrapper });
+
+    act(() => result.current.toggleTypeFilter('grass'));
+    act(() => result.current.toggleTypeFilter('poison'));
+    act(() => result.current.toggleTypeFilter('fire'));
+
+    expect(result.current.activeTypeFilters).toEqual(['poison', 'fire']);
+  });
+
+  test('clearing filters also turns off the favorites-only view', () => {
+    const wrapper = ({ children }) => <FilterProvider>{children}</FilterProvider>;
+    const { result } = renderHook(() => useFilter(), { wrapper });
+
+    act(() => result.current.setFavoritesOnly(true));
+    expect(result.current.favoritesOnly).toBe(true);
+
+    act(() => result.current.clearFilters());
+    expect(result.current.favoritesOnly).toBe(false);
+  });
 });

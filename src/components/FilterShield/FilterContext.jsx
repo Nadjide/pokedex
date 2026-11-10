@@ -1,61 +1,55 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 const FilterContext = createContext();
 
 export const useFilter = () => useContext(FilterContext);
 
+// Types présents dans le Pokédex de Kanto (typage moderne : Acier et Fée inclus).
+const TYPES = [
+  'normal', 'fire', 'water', 'electric', 'grass', 'ice',
+  'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
+  'rock', 'ghost', 'dragon', 'steel', 'fairy',
+];
+
+// Un Pokémon a au plus deux types : au-delà, le filtre cumulatif ne renverrait rien.
+const MAX_TYPE_FILTERS = 2;
+
 export const FilterProvider = ({ children }) => {
-  const [types, setTypes] = useState([]);
-  const [generations, setGenerations] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState('id-asc'); // id-asc, id-desc, name-asc, name-desc, favorites, weight-desc, height-desc
+  const [sortOrder, setSortOrder] = useState('id-asc');
   const [activeTypeFilters, setActiveTypeFilters] = useState([]);
-  const [activeGenFilter, setActiveGenFilter] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
-  useEffect(() => {
-    const standardTypes = [
-      'normal', 'fire', 'water', 'electric', 'grass', 'ice',
-      'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
-      'rock', 'ghost', 'dragon', 'steel', 'fairy'
-    ];
-    setTypes(standardTypes);
-
-    setGenerations([
-      { id: '', name: 'Toutes les générations', nameEn: 'All generations' },
-      { id: '1', name: 'Gen I • Kanto (1-151)', nameEn: 'Gen I • Kanto (1-151)' },
-    ]);
+  const toggleTypeFilter = useCallback((type) => {
+    setActiveTypeFilters((prev) => {
+      if (prev.includes(type)) return prev.filter((t) => t !== type);
+      // Au-delà de la limite, le type le plus ancien cède sa place.
+      return [...prev, type].slice(-MAX_TYPE_FILTERS);
+    });
   }, []);
 
-  const toggleTypeFilter = (type) => {
-    setActiveTypeFilters((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setActiveTypeFilters([]);
-    setActiveGenFilter('');
     setSearchTerm('');
     setSortOrder('id-asc');
-  };
+    setFavoritesOnly(false);
+  }, []);
 
-  return (
-    <FilterContext.Provider
-      value={{
-        types,
-        generations,
-        searchTerm,
-        setSearchTerm,
-        activeTypeFilters,
-        toggleTypeFilter,
-        activeGenFilter,
-        setActiveGenFilter,
-        sortOrder,
-        setSortOrder,
-        clearFilters,
-      }}
-    >
-      {children}
-    </FilterContext.Provider>
+  const value = useMemo(
+    () => ({
+      types: TYPES,
+      searchTerm,
+      setSearchTerm,
+      activeTypeFilters,
+      toggleTypeFilter,
+      favoritesOnly,
+      setFavoritesOnly,
+      sortOrder,
+      setSortOrder,
+      clearFilters,
+    }),
+    [searchTerm, activeTypeFilters, toggleTypeFilter, favoritesOnly, sortOrder, clearFilters]
   );
+
+  return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };

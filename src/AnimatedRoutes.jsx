@@ -2,45 +2,66 @@
 import React, { Suspense, lazy } from 'react';
 import { useLocation, Routes, Route, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Box, Typography, Button, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TransitionLayout from './components/AnimatedLayout/TransitionLayout.jsx';
 import PokemonList from './Page_1/PokemonList/Pokemonlist.jsx';
+import PokeballMark from './components/PokeballMark.jsx';
+import { pillButtonSx } from './components/FavoriteButton.jsx';
+import { useTranslation } from './i18n/translations.js';
 
 const PokemonDetail = lazy(() => import('./Page_2/PokemonDetails/PokemonDetail.jsx'));
 
 function NotFoundPage() {
+  const { t } = useTranslation();
+
   return (
-    <Box sx={{ maxWidth: '600px', margin: '100px auto', padding: '24px', textAlign: 'center' }}>
-      <Typography variant="h2" sx={{ color: '#e63946', fontWeight: 800, fontFamily: 'Poppins, sans-serif' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        maxWidth: 560,
+        mx: 'auto',
+        my: { xs: 8, md: 12 },
+        px: 3,
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <PokeballMark outline size={96} style={{ color: 'var(--text-faint)', opacity: 0.4 }} />
+      <Typography
+        component="h1"
+        sx={{
+          mt: 3,
+          mb: 1.5,
+          fontFamily: 'var(--font-display)',
+          fontWeight: 800,
+          fontSize: '4.5rem',
+          lineHeight: 1,
+          color: 'var(--accent)',
+        }}
+      >
         404
       </Typography>
-      <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, fontFamily: 'Poppins, sans-serif', my: 2 }}>
-        Page introuvable / Page not found
+      <Typography
+        component="h2"
+        sx={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.5rem', mb: 1 }}
+      >
+        {t('pageNotFound')}
       </Typography>
-      <Link to="/" style={{ textDecoration: 'none' }}>
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            background: '#e63946',
-            color: '#fff',
-            borderRadius: '50px',
-            fontFamily: 'Poppins, sans-serif',
-            textTransform: 'none',
-            '&:hover': { background: '#d62828' },
-          }}
-        >
-          Retour à l'accueil
-        </Button>
-      </Link>
+      <Typography sx={{ color: 'var(--text-muted)', mb: 3.5 }}>{t('pageNotFoundDesc')}</Typography>
+      <Box component={Link} to="/" sx={{ ...pillButtonSx, textDecoration: 'none' }}>
+        <ArrowBackIcon />
+        {t('backHome')}
+      </Box>
     </Box>
   );
 }
 
 const RouteFallback = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-    <CircularProgress sx={{ color: '#e63946' }} />
+    <CircularProgress sx={{ color: 'var(--accent)' }} />
   </Box>
 );
 
@@ -48,7 +69,7 @@ const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route
           path="/"

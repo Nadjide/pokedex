@@ -1,25 +1,83 @@
 // src/components/AdvancedSearch/AdvancedSearch.jsx
-import React, { useContext } from 'react';
-import { useFilter } from '../FilterShield/FilterContext.jsx';
-import { LanguageContext } from '../../Langue/LanguageContext.jsx';
-import { TypesContext } from '../../Page_1/TypesContext/TypesContext.jsx';
-import { typeColors } from '../../Theme/typeColors.js';
-import {
-  TextField,
-  Chip,
-  Box,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  InputAdornment,
-  IconButton,
-  Typography,
-} from '@mui/material';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { Box, ButtonBase, Divider, IconButton, InputBase, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
+import CloseIcon from '@mui/icons-material/Close';
 import SortIcon from '@mui/icons-material/Sort';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import CheckIcon from '@mui/icons-material/Check';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { useFilter } from '../FilterShield/FilterContext.jsx';
+import { useFavorites } from '../../FavoritesContext.jsx';
+import { TypesContext } from '../../Page_1/TypesContext/TypesContext.jsx';
+import { getReadableTextColor, getTypeColor, getTypeLabel } from '../../Theme/typeColors.js';
+import { SORT_ORDERS } from '../../utils/filterPokemons.js';
+import { useTranslation } from '../../i18n/translations.js';
+import TypeIcon from '../TypeIcon.jsx';
+
+const isTypingTarget = (target) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
+const toolbarButtonSx = {
+  height: 44,
+  px: { xs: 1.25, md: 1.75 },
+  gap: 0.75,
+  borderRadius: 999,
+  color: 'var(--text-muted)',
+  fontFamily: 'inherit',
+  fontSize: '0.86rem',
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+  transition: 'background 0.2s ease, color 0.2s ease',
+  '&:hover': { background: 'var(--surface-2)', color: 'var(--text)' },
+  '& svg': { fontSize: 20 },
+};
+
+const typeChipSx = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  height: 38,
+  pl: '5px',
+  pr: '14px',
+  flexShrink: 0,
+  borderRadius: 999,
+  border: '1px solid var(--border)',
+  background: 'var(--surface)',
+  color: 'var(--text-muted)',
+  font: 'inherit',
+  fontSize: '0.83rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
+  '& .type-dot': {
+    width: 28,
+    height: 28,
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: '50%',
+    background: 'var(--type)',
+    color: 'var(--type-text)',
+    transition: 'background 0.2s ease',
+  },
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    borderColor: 'var(--type)',
+    color: 'var(--text)',
+  },
+  '&[aria-pressed="true"]': {
+    background: 'var(--type)',
+    borderColor: 'var(--type)',
+    color: 'var(--type-text)',
+    boxShadow: '0 8px 20px -8px var(--type)',
+  },
+  '&[aria-pressed="true"] .type-dot': {
+    background: 'color-mix(in srgb, var(--type-text) 16%, transparent)',
+  },
+};
 
 const AdvancedSearch = () => {
   const {
@@ -30,268 +88,238 @@ const AdvancedSearch = () => {
     setSearchTerm,
     sortOrder,
     setSortOrder,
-    activeGenFilter,
-    setActiveGenFilter,
-    generations,
-    clearFilters,
+    favoritesOnly,
+    setFavoritesOnly,
   } = useFilter();
-
-  const { language } = useContext(LanguageContext);
+  const { favorites } = useFavorites();
+  const { t, language } = useTranslation();
   const typesData = useContext(TypesContext) || {};
+  const inputRef = useRef(null);
+  const [sortAnchor, setSortAnchor] = useState(null);
 
-  const hasActiveFilters = activeTypeFilters.length > 0 || searchTerm !== '' || activeGenFilter !== '' || sortOrder !== 'id-asc';
+  // Raccourci « / » : place le curseur dans la recherche depuis n'importe où.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      if (searchTerm) setSearchTerm('');
+      else event.currentTarget.blur();
+    }
+  };
 
   return (
-    <Box
-      sx={{
-        margin: '16px 0 24px 0',
-        padding: { xs: '18px', md: '24px' },
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '24px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-      }}
-    >
-      {/* Top row: Search input + Sort dropdown + Gen filter */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr' },
-          gap: 2,
-          mb: 2.5,
-          alignItems: 'center',
-        }}
-      >
-        {/* Search bar */}
-        <TextField
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={language === 'fr' ? 'Rechercher par nom ou numéro (ex: 25, Pikachu)...' : 'Search by name or number (e.g. 25, Pikachu)...'}
-          variant="outlined"
-          fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)' }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm ? (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchTerm('')}
-                  aria-label="Effacer recherche"
-                  sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff' } }}
-                >
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-            sx: {
-              color: '#fff',
-              fontFamily: 'Poppins, sans-serif',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              borderRadius: '50px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255,255,255,0.15)',
-                borderRadius: '50px',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(230, 57, 70, 0.6)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#e63946',
-                borderWidth: '2px',
-              },
-              '& input::placeholder': {
-                color: 'rgba(255,255,255,0.4)',
-                opacity: 1,
-                fontSize: '0.9rem',
-              },
+    <>
+      {/* Barre de recherche flottante : reste accessible pendant le défilement.
+          Elle doit rester enfant direct de la page pour coller sur toute sa hauteur. */}
+      <Box sx={{ position: 'sticky', top: 'calc(var(--header-h) + 12px)', zIndex: 30 }}>
+        <Box
+          role="search"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 0.25, sm: 0.5 },
+            height: 60,
+            pl: { xs: 2, sm: 2.5 },
+            pr: 1,
+            borderRadius: 999,
+            background: 'color-mix(in srgb, var(--surface) 86%, transparent)',
+            backdropFilter: 'blur(20px) saturate(160%)',
+            border: '1px solid var(--border-strong)',
+            boxShadow: 'var(--shadow-md)',
+            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+            '&:focus-within': {
+              borderColor: 'var(--accent)',
+              boxShadow: '0 0 0 4px var(--accent-soft), var(--shadow-md)',
             },
           }}
-        />
+        >
+          <SearchIcon sx={{ color: 'var(--text-faint)', mr: 1, flexShrink: 0 }} />
+          <InputBase
+            inputRef={inputRef}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={t('searchPlaceholder')}
+            inputProps={{
+              'aria-label': t('searchLabel'),
+              autoComplete: 'off',
+              spellCheck: false,
+              enterKeyHint: 'search',
+            }}
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              color: 'var(--text)',
+              fontSize: '1rem',
+              '& input': { p: 0, textOverflow: 'ellipsis', outline: 'none' },
+              '& input::placeholder': { color: 'var(--text-faint)', opacity: 1 },
+            }}
+          />
 
-        {/* Sort selector */}
-        <FormControl fullWidth size="medium">
-          <InputLabel
-            id="sort-select-label"
-            sx={{
-              color: 'rgba(255,255,255,0.6)',
-              fontFamily: 'Poppins, sans-serif',
-              '&.Mui-focused': { color: '#e63946' },
-            }}
-          >
-            {language === 'fr' ? 'Trier par' : 'Sort by'}
-          </InputLabel>
-          <Select
-            labelId="sort-select-label"
-            value={sortOrder}
-            label={language === 'fr' ? 'Trier par' : 'Sort by'}
-            onChange={(e) => setSortOrder(e.target.value)}
-            startAdornment={<SortIcon sx={{ color: 'rgba(255,255,255,0.5)', mr: 1, ml: 0.5 }} />}
-            sx={{
-              color: '#fff',
-              borderRadius: '50px',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              fontFamily: 'Poppins, sans-serif',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255,255,255,0.15)',
-                borderRadius: '50px',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(230, 57, 70, 0.6)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#e63946',
-              },
-              '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
-            }}
-          >
-            <MenuItem value="id-asc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Numéro croissant (#1 → #151)' : 'Number ascending (#1 → #151)'}
-            </MenuItem>
-            <MenuItem value="id-desc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Numéro décroissant (#151 → #1)' : 'Number descending (#151 → #1)'}
-            </MenuItem>
-            <MenuItem value="name-asc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Nom (A → Z)' : 'Name (A → Z)'}
-            </MenuItem>
-            <MenuItem value="name-desc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Nom (Z → A)' : 'Name (Z → A)'}
-            </MenuItem>
-            <MenuItem value="favorites" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Favoris d\'abord ⭐' : 'Favorites first ⭐'}
-            </MenuItem>
-            <MenuItem value="weight-desc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Poids (Plus lourds)' : 'Weight (Heaviest)'}
-            </MenuItem>
-            <MenuItem value="height-desc" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {language === 'fr' ? 'Taille (Plus grands)' : 'Height (Tallest)'}
-            </MenuItem>
-          </Select>
-        </FormControl>
+          {searchTerm ? (
+            <Tooltip title={t('clearSearch')}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setSearchTerm('');
+                  inputRef.current?.focus();
+                }}
+                aria-label={t('clearSearch')}
+                sx={{ color: 'var(--text-muted)', '&:hover': { color: 'var(--text)' } }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <Tooltip title={t('searchShortcut')}>
+              <Box
+                component="kbd"
+                sx={{
+                  display: { xs: 'none', sm: 'inline-grid' },
+                  placeItems: 'center',
+                  minWidth: 26,
+                  height: 26,
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-strong)',
+                  background: 'var(--surface-2)',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  flexShrink: 0,
+                }}
+              >
+                /
+              </Box>
+            </Tooltip>
+          )}
 
-        {/* Generation selector */}
-        <FormControl fullWidth size="medium">
-          <InputLabel
-            id="gen-select-label"
-            sx={{
-              color: 'rgba(255,255,255,0.6)',
-              fontFamily: 'Poppins, sans-serif',
-              '&.Mui-focused': { color: '#e63946' },
-            }}
-          >
-            {language === 'fr' ? 'Génération' : 'Generation'}
-          </InputLabel>
-          <Select
-            labelId="gen-select-label"
-            value={activeGenFilter}
-            label={language === 'fr' ? 'Génération' : 'Generation'}
-            onChange={(e) => setActiveGenFilter(e.target.value)}
-            startAdornment={<FilterAltIcon sx={{ color: 'rgba(255,255,255,0.5)', mr: 1, ml: 0.5 }} />}
-            sx={{
-              color: '#fff',
-              borderRadius: '50px',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              fontFamily: 'Poppins, sans-serif',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255,255,255,0.15)',
-                borderRadius: '50px',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(230, 57, 70, 0.6)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#e63946',
-              },
-              '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.6)' },
-            }}
-          >
-            {generations.map((gen) => (
-              <MenuItem key={gen.id} value={gen.id} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                {language === 'fr' ? gen.name : gen.nameEn}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+          <Divider orientation="vertical" flexItem sx={{ my: 1.75, mx: { xs: 0.5, sm: 1 }, borderColor: 'var(--border)' }} />
 
-      {/* Type filters row */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-          <Typography
+          <ButtonBase
+            onClick={() => setFavoritesOnly(!favoritesOnly)}
+            aria-pressed={favoritesOnly}
+            aria-label={t('favoritesOnly')}
             sx={{
-              color: 'rgba(255,255,255,0.55)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              fontFamily: 'Poppins, sans-serif',
+              ...toolbarButtonSx,
+              ...(favoritesOnly && {
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)',
+                '&:hover': { background: 'var(--accent-soft)', color: 'var(--accent)' },
+              }),
             }}
           >
-            {language === 'fr' ? 'Filtrer par Type(s) :' : 'Filter by Type(s):'}
-          </Typography>
-
-          {hasActiveFilters && (
-            <Typography
-              component="button"
-              onClick={clearFilters}
+            {favoritesOnly ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t('favorites')}
+            </Box>
+            <Box
+              component="span"
               sx={{
-                background: 'none',
-                border: 'none',
-                color: '#e63946',
-                cursor: 'pointer',
-                fontFamily: 'Poppins, sans-serif',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                p: 0,
-                textDecoration: 'underline',
-                '&:hover': { color: '#ff4d5a' },
+                display: { xs: 'none', md: 'inline-grid' },
+                placeItems: 'center',
+                minWidth: 22,
+                height: 22,
+                px: '6px',
+                borderRadius: 999,
+                background: favoritesOnly ? 'var(--accent)' : 'var(--surface-3)',
+                color: favoritesOnly ? '#fff' : 'var(--text-muted)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {language === 'fr' ? 'Réinitialiser' : 'Reset all'}
-            </Typography>
-          )}
-        </Box>
+              {favorites.length}
+            </Box>
+          </ButtonBase>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-          {types.map((type) => {
-            const isSelected = activeTypeFilters.includes(type);
-            const color = typeColors[type] || typesData[type]?.backgroundColor || '#777';
-            const label = typesData[type]?.translations?.[language] || type;
+          <ButtonBase
+            onClick={(e) => setSortAnchor(e.currentTarget)}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(sortAnchor)}
+            aria-label={`${t('sortBy')} : ${t(`sortOptions.${sortOrder}`)}`}
+            sx={toolbarButtonSx}
+          >
+            <SortIcon />
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+              {t(`sortOptions.${sortOrder}`)}
+            </Box>
+            <KeyboardArrowDownIcon sx={{ display: { xs: 'none', md: 'block' }, ml: -0.5 }} />
+          </ButtonBase>
 
-            return (
-              <Chip
-                key={type}
-                label={label}
-                onClick={() => toggleTypeFilter(type)}
-                sx={{
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  textTransform: 'capitalize',
-                  height: 28,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  backgroundColor: isSelected ? color : 'rgba(255,255,255,0.04)',
-                  color: isSelected ? '#fff' : 'rgba(255,255,255,0.7)',
-                  border: isSelected ? `1px solid ${color}` : `1px solid rgba(255,255,255,0.12)`,
-                  boxShadow: isSelected ? `0 0 12px ${color}80` : 'none',
-                  '&:hover': {
-                    backgroundColor: isSelected ? color : `${color}30`,
-                    borderColor: color,
-                    color: '#fff',
-                    transform: 'translateY(-2px)',
-                  },
+          <Menu
+            anchorEl={sortAnchor}
+            open={Boolean(sortAnchor)}
+            onClose={() => setSortAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            {SORT_ORDERS.map((order) => (
+              <MenuItem
+                key={order}
+                selected={order === sortOrder}
+                onClick={() => {
+                  setSortOrder(order);
+                  setSortAnchor(null);
                 }}
-              />
-            );
-          })}
+              >
+                <ListItemIcon sx={{ minWidth: '30px !important' }}>
+                  {order === sortOrder && <CheckIcon fontSize="small" color="primary" />}
+                </ListItemIcon>
+                {t(`sortOptions.${order}`)}
+              </MenuItem>
+            ))}
+          </Menu>
         </Box>
       </Box>
-    </Box>
+
+      {/* Filtres par type : défilement horizontal sur mobile, retour à la ligne au-delà */}
+      <Box
+        role="group"
+        aria-label={`${t('filterByTypes')} (${t('filterByTypesHint')})`}
+        className="no-scrollbar"
+        sx={{
+          display: 'flex',
+          gap: 1,
+          mt: 2,
+          py: 0.5,
+          flexWrap: { xs: 'nowrap', md: 'wrap' },
+          overflowX: { xs: 'auto', md: 'visible' },
+          mx: { xs: -2, md: 0 },
+          px: { xs: 2, md: 0 },
+        }}
+      >
+        {types.map((type) => {
+          const color = getTypeColor(type);
+          return (
+            <Box
+              key={type}
+              component="button"
+              type="button"
+              onClick={() => toggleTypeFilter(type)}
+              aria-pressed={activeTypeFilters.includes(type)}
+              style={{ '--type': color, '--type-text': getReadableTextColor(color) }}
+              sx={typeChipSx}
+            >
+              <span className="type-dot">
+                <TypeIcon type={type} sx={{ fontSize: 16 }} />
+              </span>
+              {getTypeLabel(type, language, typesData)}
+            </Box>
+          );
+        })}
+      </Box>
+    </>
   );
 };
 

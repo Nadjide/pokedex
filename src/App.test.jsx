@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import App from './App';
 
@@ -8,6 +9,7 @@ const mockPokemons = [
     height: 7,
     weight: 69,
     image: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png',
+    // Le jeu de données réel liste les types en ordre inverse (secondaire d'abord)
     types: ['poison', 'grass'],
     moves: ['tackle', 'vine-whip'],
     names: {
@@ -45,6 +47,9 @@ const mockTypes = {
 };
 
 beforeEach(() => {
+  localStorage.clear();
+  window.history.pushState({}, '', '/');
+
   global.fetch = vi.fn((url) => {
     if (url.includes('pokemons.json')) {
       return Promise.resolve({
@@ -69,23 +74,69 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-test('renders Pokedex application header and logo', async () => {
+// Les cartes de la grille sont des <article> ; le « Pokémon du jour » n'en est pas un.
+const findCards = () => screen.findAllByRole('article');
+
+test('renders the header with a link back to the Pokédex home', async () => {
   render(<App />);
-  const logoElements = screen.getAllByAltText(/pokédex/i);
-  expect(logoElements.length).toBeGreaterThan(0);
+  expect(screen.getByRole('link', { name: /pokédex/i })).toHaveAttribute('href', '/');
+  await findCards();
 });
 
 test('renders pokemon cards after data fetch', async () => {
   render(<App />);
 
-  await waitFor(() => {
-    expect(screen.getByText(/Bulbizarre/i)).toBeInTheDocument();
-  });
-  expect(screen.getByText(/Salamèche/i)).toBeInTheDocument();
+  const cards = await findCards();
+  expect(cards).toHaveLength(2);
+  expect(within(cards[0]).getByRole('link', { name: 'Bulbizarre' })).toHaveAttribute('href', '/pokemon/1');
+  expect(within(cards[1]).getByRole('link', { name: 'Salamèche' })).toHaveAttribute('href', '/pokemon/4');
+});
+
+test('shows the main type first even though the dataset lists it last', async () => {
+  render(<App />);
+
+  const [bulbasaur] = await findCards();
+  const badges = within(bulbasaur).getAllByText(/Plante|Poison/);
+  expect(badges.map((badge) => badge.textContent)).toEqual(['Plante', 'Poison']);
 });
 
 test('renders search input field', async () => {
   render(<App />);
   const searchInput = screen.getByPlaceholderText(/Rechercher par nom/i);
   expect(searchInput).toBeInTheDocument();
+  await findCards();
+});
+
+test('filters the grid from the search field, ignoring accents', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  await findCards();
+
+  await user.type(screen.getByPlaceholderText(/Rechercher par nom/i), 'salameche');
+
+  await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
+  expect(within(screen.getByRole('article')).getByRole('link', { name: 'Salamèche' })).toBeInTheDocument();
+});
+
+test('shows only favorites when the favorites filter is on', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  const cards = await findCards();
+
+  await user.click(within(cards[1]).getByRole('button', { name: 'Ajouter aux favoris' }));
+  await user.click(screen.getByRole('button', { name: 'Favoris uniquement' }));
+
+  await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
+  expect(within(screen.getByRole('article')).getByRole('link', { name: 'Salamèche' })).toBeInTheDocument();
+});
+
+test('switches the interface language', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  await findCards();
+
+  await user.click(screen.getByRole('button', { name: 'English' }));
+
+  expect(screen.getByPlaceholderText(/Search by name/i)).toBeInTheDocument();
+  expect(within(screen.getAllByRole('article')[0]).getByRole('link', { name: 'Bulbasaur' })).toBeInTheDocument();
 });

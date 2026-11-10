@@ -1,207 +1,206 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Chip, Rating, IconButton } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import { LanguageContext } from '../../Langue/LanguageContext';
-import { useFavorites } from '../../FavoritesContext';
-import { TypesContext } from '../TypesContext/TypesContext';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Box, Typography } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
+import { useTranslation } from '../../i18n/translations.js';
+import { useRating } from '../../hooks/useRating.js';
+import { getTypeColor } from '../../Theme/typeColors.js';
+import { formatId, getPokemonName } from '../../utils/pokemon.js';
+import PokemonArtwork from '../../components/PokemonArtwork.jsx';
+import TypeBadge from '../../components/TypeBadge.jsx';
+import FavoriteButton from '../../components/FavoriteButton.jsx';
 import CompareButton from '../../components/CompareButton.jsx';
+import PokeballMark from '../../components/PokeballMark.jsx';
 
-export default function PokemonCard({ pokemon }) {
-  const navigate = useNavigate();
-  const { language } = useContext(LanguageContext);
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const typesData = useContext(TypesContext) || {};
-  const [rating, setRating] = useState(0);
+// Les couleurs du type arrivent par variables CSS (--type, --type-2) : le style
+// reste identique pour toutes les cartes et n'est généré qu'une seule fois.
+const cardSx = {
+  position: 'relative',
+  isolation: 'isolate',
+  display: 'flex',
+  flexDirection: 'column',
+  minWidth: 0,
+  p: { xs: 1.5, sm: 2 },
+  borderRadius: 'var(--radius-lg)',
+  background:
+    'linear-gradient(165deg, color-mix(in srgb, var(--type) var(--card-tint), var(--surface)) 0%, color-mix(in srgb, var(--type-2) 6%, var(--surface)) 72%)',
+  border: '1px solid color-mix(in srgb, var(--type) 24%, var(--border))',
+  boxShadow: 'var(--shadow-sm)',
+  overflow: 'hidden',
+  transition:
+    'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease',
+  // `backwards` : après l'animation d'entrée, le survol reprend la main sur transform.
+  animation: 'card-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards',
+  animationDelay: 'calc(var(--i, 0) * 28ms)',
 
-  const isFav = isFavorite(pokemon.id);
+  '&:hover, &:focus-within': {
+    transform: 'translateY(-6px)',
+    borderColor: 'color-mix(in srgb, var(--type) 60%, transparent)',
+    boxShadow: '0 24px 44px -20px color-mix(in srgb, var(--type) 70%, transparent), var(--shadow-md)',
+  },
+  '&:hover .card-art, &:focus-within .card-art': {
+    transform: 'scale(1.1) translateY(-4px)',
+  },
+  '&:hover .card-ring, &:focus-within .card-ring': {
+    transform: 'rotate(40deg) scale(1.05)',
+    opacity: 0.2,
+  },
 
-  useEffect(() => {
-    try {
-      const storedRating = localStorage.getItem(`rating-${pokemon.id}`);
-      if (storedRating) setRating(Number(storedRating));
-    } catch (e) {
-      // ignore
-    }
-  }, [pokemon.id]);
+  // Sur les appareils à pointeur, « Comparer » n'apparaît qu'au survol ou au focus.
+  '@media (hover: hover)': {
+    '& .card-compare:not([aria-pressed="true"])': { opacity: 0, transform: 'translateX(6px)' },
+    '&:hover .card-compare, &:focus-within .card-compare': { opacity: 1, transform: 'none' },
+  },
 
-  const handleRatingChange = (event, newValue) => {
-    event.stopPropagation();
-    const val = Number(newValue);
-    setRating(val);
-    try {
-      localStorage.setItem(`rating-${pokemon.id}`, val);
-    } catch (e) {
-      // ignore
-    }
-  };
+  // Lien étiré : toute la carte est cliquable, les boutons restent au-dessus.
+  '& .card-link': { color: 'inherit', textDecoration: 'none', outline: 'none' },
+  '& .card-link::after': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    zIndex: 1,
+    borderRadius: 'var(--radius-lg)',
+  },
+  '& .card-link:focus-visible::after': {
+    outline: '2px solid var(--accent)',
+    outlineOffset: '-2px',
+  },
+};
 
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleFavorite(pokemon.id);
-  };
+const artZoneSx = {
+  position: 'relative',
+  display: 'grid',
+  placeItems: 'center',
+  mt: 0.5,
+  mb: 1,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    width: '78%',
+    aspectRatio: '1 / 1',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, color-mix(in srgb, var(--type) 55%, transparent) 0%, transparent 68%)',
+    opacity: 0.55,
+    zIndex: -1,
+  },
+};
 
-  const handleCardClick = () => {
-    navigate(`/pokemon/${pokemon.id}`);
-  };
+function PokemonCard({ pokemon, index = 0 }) {
+  const { t, language } = useTranslation();
+  const [rating] = useRating(pokemon.id);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      navigate(`/pokemon/${pokemon.id}`);
-    }
-  };
-
-  const primaryType = pokemon.types?.[0] || 'normal';
-  const typeColor = typesData[primaryType]?.backgroundColor || '#888';
-  const pokemonName = pokemon.names?.[language] || pokemon.names?.fr || pokemon.names?.en || `#${pokemon.id}`;
+  const types = pokemon.types?.length ? pokemon.types : ['normal'];
+  const name = getPokemonName(pokemon, language);
 
   return (
     <Box
-      role="button"
-      tabIndex={0}
-      onClick={handleCardClick}
-      onKeyDown={handleKeyDown}
-      sx={{
-        position: 'relative',
-        width: '210px',
-        padding: '16px',
-        margin: '10px',
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-        backdropFilter: 'blur(10px)',
-        border: `1px solid ${typeColor}40`,
-        borderRadius: '20px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-        cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        overflow: 'hidden',
-        textAlign: 'center',
-        outline: 'none',
-        '&:hover': {
-          transform: 'translateY(-6px) scale(1.02)',
-          boxShadow: `0 16px 40px rgba(0,0,0,0.5), 0 0 20px ${typeColor}50`,
-          border: `1px solid ${typeColor}90`,
-        },
-        '&:focus-visible': {
-          boxShadow: `0 0 0 3px #e63946, 0 16px 40px rgba(0,0,0,0.5)`,
-        },
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: `linear-gradient(90deg, ${typeColor}, ${typeColor}60)`,
-          borderRadius: '20px 20px 0 0',
-        },
+      component="article"
+      style={{
+        '--type': getTypeColor(types[0]),
+        '--type-2': getTypeColor(types[1] || types[0]),
+        '--i': Math.min(index, 16),
       }}
+      sx={cardSx}
     >
-      <Typography
-        sx={{
-          position: 'absolute',
-          top: '12px',
-          left: '12px',
-          color: 'rgba(255,255,255,0.5)',
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          letterSpacing: '0.05em',
-          fontFamily: 'Poppins, sans-serif',
-        }}
-      >
-        #{String(pokemon.id).padStart(3, '0')}
-      </Typography>
-
-      <IconButton
-        onClick={handleFavoriteClick}
-        aria-label={isFav ? (language === 'fr' ? 'Retirer des favoris' : 'Remove from favorites') : (language === 'fr' ? 'Ajouter aux favoris' : 'Add to favorites')}
-        sx={{
-          position: 'absolute',
-          top: '6px',
-          right: '6px',
-          padding: '6px',
-          color: isFav ? '#e63946' : 'rgba(255,255,255,0.3)',
-          transition: 'all 0.2s ease',
-          '&:hover': { color: '#e63946', background: 'rgba(230,57,70,0.15)' },
-        }}
-      >
-        {isFav ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
-      </IconButton>
-
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5, mb: 1 }}>
-        <img
-          src={pokemon.image}
-          alt={pokemonName}
-          loading="lazy"
-          decoding="async"
-          style={{
-            width: '110px',
-            height: '110px',
-            objectFit: 'contain',
-            filter: `drop-shadow(0 4px 12px ${typeColor}60)`,
-            imageRendering: 'pixelated',
-          }}
-        />
-      </Box>
-
-      <Typography
-        sx={{
-          color: '#fff',
-          fontWeight: 700,
-          fontSize: '0.95rem',
-          fontFamily: 'Poppins, sans-serif',
-          textAlign: 'center',
-          mb: 1,
-          textTransform: 'capitalize',
-        }}
-      >
-        {pokemonName}
-      </Typography>
-
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: '5px', flexWrap: 'wrap', mb: 1 }}>
-        {pokemon.types?.map((type, index) => {
-          const typeInfo = typesData[type];
-          const typeLabel = typeInfo?.translations?.[language] || type;
-          const bg = typeInfo?.backgroundColor || typeColor;
-
-          return (
-            <Chip
-              key={index}
-              label={typeLabel}
-              size="small"
-              sx={{
-                backgroundColor: bg,
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '0.62rem',
-                height: '20px',
-                fontFamily: 'Poppins, sans-serif',
-                textTransform: 'capitalize',
-                '& .MuiChip-label': { px: 0.8 },
-              }}
-            />
-          );
-        })}
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: 0.5 }} onClick={(e) => e.stopPropagation()}>
-        <Rating
-          name={`pokemon-rating-${pokemon.id}`}
-          value={rating}
-          onChange={handleRatingChange}
-          size="small"
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 34 }}>
+        <Typography
           sx={{
-            '& .MuiRating-iconFilled': { color: '#f4a261' },
-            '& .MuiRating-iconEmpty': { color: 'rgba(255,255,255,0.15)' },
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: '0.86rem',
+            letterSpacing: '0.04em',
+            color: 'var(--text-muted)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {formatId(pokemon.id)}
+        </Typography>
+        {rating > 0 && (
+          <Box
+            component="span"
+            aria-label={t('ratedOutOf5', { value: rating })}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '2px',
+              color: 'var(--star)',
+              fontSize: '0.76rem',
+              fontWeight: 700,
+            }}
+          >
+            <StarIcon sx={{ fontSize: 14 }} />
+            {rating}
+          </Box>
+        )}
+      </Box>
+
+      <Box
+        sx={{
+          position: 'absolute',
+          top: { xs: 8, sm: 12 },
+          right: { xs: 8, sm: 12 },
+          zIndex: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.75,
+        }}
+      >
+        <FavoriteButton pokemonId={pokemon.id} />
+        <CompareButton pokemon={pokemon} variant="icon" className="card-compare" />
+      </Box>
+
+      <Box sx={artZoneSx}>
+        <PokeballMark
+          outline
+          size={100}
+          className="card-ring"
+          style={{
+            position: 'absolute',
+            width: '82%',
+            height: 'auto',
+            zIndex: -1,
+            color: 'var(--type)',
+            opacity: 0.12,
+            transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease',
+          }}
+        />
+        <PokemonArtwork
+          pokemon={pokemon}
+          alt=""
+          className="card-art"
+          sx={{
+            width: '74%',
+            filter: 'drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28))',
           }}
         />
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-        <CompareButton pokemon={pokemon} />
+      <Typography
+        component="h2"
+        sx={{
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize: { xs: '1rem', sm: '1.12rem' },
+          lineHeight: 1.2,
+          color: 'var(--text)',
+          textTransform: 'capitalize',
+          mb: 1,
+          overflowWrap: 'anywhere',
+        }}
+      >
+        <Link to={`/pokemon/${pokemon.id}`} className="card-link">
+          {name}
+        </Link>
+      </Typography>
+
+      {/* Sur mobile (2 colonnes étroites), les badges perdent leur icône pour tenir sur une ligne */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6, '& svg': { display: { xs: 'none', sm: 'block' } } }}>
+        {types.map((type) => (
+          <TypeBadge key={type} type={type} size="sm" />
+        ))}
       </Box>
     </Box>
   );
 }
+
+export default React.memo(PokemonCard);
