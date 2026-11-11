@@ -117,16 +117,18 @@ describe('team builder', () => {
   });
 
   test('blocks a seventh member with a clear “team full” state', async () => {
-    localStorage.setItem('team', JSON.stringify([3, 6, 9, 12, 18, 25]));
+    // Équipe pleine sans Florizarre, première carte de la liste : la grille
+    // virtualisée n'en rend que quelques-unes sans mise en page (jsdom).
+    localStorage.setItem('team', JSON.stringify([6, 9, 12, 18, 25, 149]));
     const user = userEvent.setup();
     render(<App />);
     const cards = await screen.findAllByRole('article');
 
-    const blocked = within(cards[6]).getByRole('button', { name: /Équipe complète \(6\/6\)/ });
+    const blocked = within(cards[0]).getByRole('button', { name: /Équipe complète \(6\/6\)/ });
     expect(blocked).toHaveAttribute('aria-disabled', 'true');
     await user.click(blocked);
 
-    expect(JSON.parse(localStorage.getItem('team'))).toEqual([3, 6, 9, 12, 18, 25]);
+    expect(JSON.parse(localStorage.getItem('team'))).toEqual([6, 9, 12, 18, 25, 149]);
     expect(screen.getByRole('link', { name: 'Mon équipe (6/6)' })).toBeInTheDocument();
   });
 

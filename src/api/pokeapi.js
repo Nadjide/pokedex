@@ -1,8 +1,8 @@
-// Accès à PokéAPI pour les données absentes du jeu de données principal :
-// statistiques de base, talents, description du Pokédex, chaîne d'évolution,
-// détails des capacités.
+// Accès à PokéAPI (REST) pour les données de la fiche, absentes de la liste :
+// statistiques de base, talents, capacités, description, chaîne d'évolution.
 import { createLimiter } from '../utils/limiter.js';
 import { MOVE_CATEGORIES } from '../utils/moves.js';
+import { getConditionRefs, summarizeEvolutionDetails } from '../utils/evolution.js';
 
 const API_BASE = 'https://pokeapi.co/api/v2';
 
@@ -75,6 +75,14 @@ export async function getPokemonCore(id) {
   };
 }
 
+// Capacités apprises par un Pokémon (identifiants anglais, triés). Même ressource
+// que getPokemonCore : avec le cache des requêtes, aucun appel réseau en plus.
+export async function getPokemonMoves(id) {
+  const data = await fetchJson(`${API_BASE}/pokemon/${id}`);
+  const slugs = (data.moves || []).map((entry) => entry.move?.name).filter(Boolean);
+  return [...new Set(slugs)].sort();
+}
+
 export async function getSpecies(id) {
   const data = await fetchJson(`${API_BASE}/pokemon-species/${id}`);
 
@@ -141,31 +149,52 @@ export function getMove(slug, { signal } = {}) {
   });
 }
 
-const mapEvolutionNode = (node) => {
-  const detail = node.evolution_details?.[0];
+const mapEvolutionNode = (node, parentSlug = null) => {
+  const slug = node.species?.name;
   return {
     id: idFromUrl(node.species?.url),
-    slug: node.species?.name,
-    condition: detail
-      ? {
-          trigger: detail.trigger?.name || null,
-          minLevel: detail.min_level || null,
-          item: detail.item?.name || null,
-          minHappiness: detail.min_happiness || null,
-        }
-      : null,
-    children: (node.evolves_to || []).map(mapEvolutionNode),
+    slug,
+    condition: summarizeEvolutionDetails(node.evolution_details, { slug, parentSlug }),
+    children: (node.evolves_to || []).map((child) => mapEvolutionNode(child, slug)),
   };
 };
 
-// Arbre d'évolution : { id, slug, condition, children: [...] }
-export async function getEvolutionTree(url) {
-  const data = await fetchJson(url);
-  return data.chain ? mapEvolutionNode(data.chain) : null;
+// Noms traduits des objets, capacités et lieux cités par les conditions. Un
+// échec laisse la référence sans nom : l'interface affiche alors l'identifiant.
+async function resolveConditionNames(tree) {
+  const refs = [];
+  const walk = (node) => {
+    refs.push(...getConditionRefs(node.condition));
+    node.children.forEach(walk);
+  };
+  walk(tree);
+
+  await Promise.all(
+    refs
+      .filter((ref) => ref.url)
+      .map((ref) =>
+        fetchJson(ref.url)
+          .then((data) => {
+            ref.names = pickByLanguage(data.names, 'name');
+          })
+          .catch(() => {})
+      )
+  );
 }
 
-// Aplatit l'arbre en étapes successives en ne gardant que les Pokémon connus
-// (`isKnown`). Renvoie par exemple [[Évoli], [Aquali, Voltali, Pyroli]].
+// Arbre d'évolution : { id, slug, condition, children: [...] }
+// (forme de `condition` : voir summarizeEvolutionDetails).
+export async function getEvolutionTree(url) {
+  const data = await fetchJson(url);
+  if (!data.chain) return null;
+  const tree = mapEvolutionNode(data.chain);
+  await resolveConditionNames(tree);
+  return tree;
+}
+
+// Aplatit l'arbre en étapes successives. Renvoie par exemple
+// [[Évoli], [Aquali, Voltali, Pyroli…]]. `isKnown` écarte les Pokémon absents
+// de la liste chargée (mode dégradé limité à Kanto).
 export function flattenEvolutionStages(tree, isKnown = () => true) {
   const stages = [];
   const walk = (node, depth) => {

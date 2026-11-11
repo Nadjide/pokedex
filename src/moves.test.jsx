@@ -185,18 +185,24 @@ describe('translations', () => {
 describe('MovesCard', () => {
   const moveUrls = () => global.fetch.mock.calls.map(([url]) => url).filter((url) => url.includes('/move/'));
 
-  const mockMoves = (catalog) => {
+  // Les capacités du Pokémon viennent de /pokemon/{id}, leurs détails de /move/{slug}.
+  const mockMoves = (catalog, pokemonMoves = []) => {
     global.fetch = vi.fn((url) => {
+      if (/\/pokemon\/\d+$/.test(url)) {
+        const moves = pokemonMoves.map((name) => ({ move: { name } }));
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ moves }) });
+      }
       const slug = url.split('/move/')[1];
       const move = catalog[slug];
       return Promise.resolve(move ? { ok: true, json: () => Promise.resolve(apiMove(move)) } : { ok: false, status: 404 });
     });
   };
 
-  const renderCard = (moves) =>
+  // Un identifiant par test : la liste d'un Pokémon est mise en cache pour la session.
+  const renderCard = (pokemonId) =>
     render(
       <LanguageProvider>
-        <MovesCard moves={moves} />
+        <MovesCard pokemonId={pokemonId} />
       </LanguageProvider>
     );
 
@@ -204,8 +210,8 @@ describe('MovesCard', () => {
   afterEach(() => vi.restoreAllMocks());
 
   test('shows localized names with their values, and the English identifier when a move fails', async () => {
-    mockMoves({ 'thunder-punch': THUNDER_PUNCH });
-    renderCard(['thunder-punch', 'missing-move']);
+    mockMoves({ 'thunder-punch': THUNDER_PUNCH }, ['thunder-punch', 'missing-move']);
+    renderCard(9001);
 
     const row = (await screen.findByText('Poing Éclair')).closest('li');
     expect(row).toHaveTextContent('Électrik');
@@ -220,7 +226,8 @@ describe('MovesCard', () => {
     const user = userEvent.setup();
     const catalog = {};
     const moves = Array.from({ length: 30 }, (_, index) => {
-      const slug = `test-move-${index}`;
+      // Zéro de tête : la liste de l'API est triée par identifiant, l'ordre reste celui des numéros.
+      const slug = `test-move-${String(index).padStart(2, '0')}`;
       catalog[slug] = {
         slug,
         fr: `Capacité ${index}`,
@@ -231,8 +238,8 @@ describe('MovesCard', () => {
       };
       return slug;
     });
-    mockMoves(catalog);
-    renderCard(moves);
+    mockMoves(catalog, moves);
+    renderCard(9002);
 
     await screen.findByText('Capacité 23');
     expect(moveUrls()).toHaveLength(24);

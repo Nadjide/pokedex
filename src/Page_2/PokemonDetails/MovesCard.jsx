@@ -12,6 +12,8 @@ import MoveCategoryIcon from '../../components/MoveCategoryIcon.jsx';
 import { ALL_TYPES } from '../../data/typeChart.js';
 import { useInView } from '../../hooks/useInView.js';
 import { useMoveDetails } from '../../hooks/useMoveDetails.js';
+import { usePokemonMoves } from '../../hooks/usePokemonMoves.js';
+import { Shimmer } from '../../Page_1/PokemonCard/PokemonCardSkeleton.jsx';
 import { useTranslation } from '../../i18n/translations.js';
 import {
   MOVE_CATEGORIES,
@@ -77,8 +79,14 @@ const listSx = (count) => ({
   gridTemplateRows: { md: `repeat(${Math.ceil(count / 2)}, auto)` },
 });
 
-export default function MovesCard({ moves = [], sx }) {
+const EMPTY = [];
+
+// Les capacités ne font plus partie de la liste : elles sont demandées à PokéAPI
+// à l'ouverture de la fiche.
+export default function MovesCard({ pokemonId, sx }) {
   const { t, language } = useTranslation();
+  const loaded = usePokemonMoves(pokemonId);
+  const moves = loaded || EMPTY;
   const [query, setQuery] = useState('');
   const [type, setType] = useState(null);
   const [category, setCategory] = useState(null);
@@ -143,7 +151,19 @@ export default function MovesCard({ moves = [], sx }) {
       : undefined;
 
   let body;
-  if (holding) {
+  if (loaded === undefined) {
+    body = (
+      <Box aria-busy="true" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {[92, 120, 78, 104, 132, 86, 110, 96].map((width, i) => (
+          <Shimmer key={i} sx={{ width, height: 32, borderRadius: 999 }} />
+        ))}
+      </Box>
+    );
+  } else if (loaded === null) {
+    body = <Typography sx={mutedTextSx}>{t('movesUnavailable')}</Typography>;
+  } else if (slugs.length === 0) {
+    body = <Typography sx={mutedTextSx}>{t('noMoves')}</Typography>;
+  } else if (holding) {
     body = (
       <>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
@@ -193,7 +213,7 @@ export default function MovesCard({ moves = [], sx }) {
 
   return (
     <SectionCard
-      title={`${t('moves')} (${slugs.length})`}
+      title={loaded ? `${t('moves')} (${slugs.length})` : t('moves')}
       hint={hint}
       sx={sx}
       action={

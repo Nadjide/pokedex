@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useNavigationType } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -8,7 +8,7 @@ import SearchOffIcon from '@mui/icons-material/SearchOff';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import PokemonCard from '../PokemonCard/PokemonCard';
+import PokemonGrid, { gridSx } from './PokemonGrid.jsx';
 import PokemonCardSkeleton from '../PokemonCard/PokemonCardSkeleton';
 import { useFavorites } from '../../FavoritesContext';
 import { usePokemon } from '../../context/PokemonContext.jsx';
@@ -21,7 +21,7 @@ import { pillButtonSx } from '../../components/FavoriteButton.jsx';
 import { useTranslation } from '../../i18n/translations.js';
 import { filterAndSortPokemons } from '../../utils/filterPokemons.js';
 import { getTypeColor } from '../../Theme/typeColors.js';
-import { formatId, getPokemonName } from '../../utils/pokemon.js';
+import { formatCount, formatId, getPokemonName } from '../../utils/pokemon.js';
 
 // Position de défilement de la liste, conservée le temps d'une visite sur une fiche.
 let savedScrollY = 0;
@@ -30,15 +30,6 @@ const pageSx = {
   maxWidth: 'var(--page-max)',
   mx: 'auto',
   px: { xs: 2, md: 3 },
-};
-
-const gridSx = {
-  display: 'grid',
-  gridTemplateColumns: {
-    xs: 'repeat(2, minmax(0, 1fr))',
-    sm: 'repeat(auto-fill, minmax(196px, 1fr))',
-  },
-  gap: { xs: 1.5, sm: 2.25 },
 };
 
 const primaryButtonSx = {
@@ -254,12 +245,15 @@ function StateMessage({ icon, title, description, action }) {
 export default function PokemonList() {
   const { t, language } = useTranslation();
   const { favorites } = useFavorites();
-  const { pokemons, loading, error, refetch } = usePokemon();
-  const { types, searchTerm, activeTypeFilters, favoritesOnly, sortOrder, clearFilters } = useFilter();
+  const { pokemons, loading, error, isFallback, refetch } = usePokemon();
+  const { types, searchTerm, activeTypeFilters, activeGenerationFilters, favoritesOnly, sortOrder, clearFilters } =
+    useFilter();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
 
   // Retour depuis une fiche : on retrouve la liste là où on l'avait laissée.
+  // La grille fenêtrée reçoit cette position pour monter d'emblée les bonnes rangées.
+  const [initialScrollY] = useState(() => (navigationType === 'POP' ? savedScrollY : 0));
   useLayoutEffect(() => {
     window.scrollTo(0, navigationType === 'POP' ? savedScrollY : 0);
     return () => {
@@ -273,12 +267,13 @@ export default function PokemonList() {
       filterAndSortPokemons(pokemons, {
         searchTerm,
         activeTypeFilters,
+        activeGenerationFilters,
         favoritesOnly,
         sortOrder,
         favorites,
         language,
       }),
-    [pokemons, searchTerm, activeTypeFilters, favoritesOnly, sortOrder, favorites, language]
+    [pokemons, searchTerm, activeTypeFilters, activeGenerationFilters, favoritesOnly, sortOrder, favorites, language]
   );
 
   // Change chaque jour, identique pour toute la journée.
@@ -289,8 +284,19 @@ export default function PokemonList() {
     return pokemons[dayNumber % pokemons.length];
   }, [pokemons]);
 
+  // Identifie le contenu de la grille : tant qu'il ne change pas, les hauteurs
+  // de rangées mesurées restent valables.
+  const gridKey = useMemo(
+    () => `${filteredPokemons.length}:${filteredPokemons[0]?.id}:${filteredPokemons.at(-1)?.id}:${sortOrder}:${language}`,
+    [filteredPokemons, sortOrder, language]
+  );
+
   const hasActiveFilters =
-    activeTypeFilters.length > 0 || searchTerm !== '' || favoritesOnly || sortOrder !== 'id-asc';
+    activeTypeFilters.length > 0 ||
+    activeGenerationFilters.length > 0 ||
+    searchTerm !== '' ||
+    favoritesOnly ||
+    sortOrder !== 'id-asc';
   const count = filteredPokemons.length;
   const total = pokemons.length;
 
@@ -338,13 +344,7 @@ export default function PokemonList() {
       />
     );
   } else {
-    content = (
-      <Box sx={gridSx}>
-        {filteredPokemons.map((pokemon, index) => (
-          <PokemonCard key={pokemon.id} pokemon={pokemon} index={index} />
-        ))}
-      </Box>
-    );
+    content = <PokemonGrid pokemons={filteredPokemons} resetKey={gridKey} initialScrollY={initialScrollY} />;
   }
 
   return (
@@ -376,7 +376,7 @@ export default function PokemonList() {
               '&::before': { content: '""', width: 24, height: 2, borderRadius: 2, background: 'var(--accent)' },
             }}
           >
-            {t('heroEyebrow')}
+            {t(isFallback ? 'heroEyebrowKanto' : 'heroEyebrow')}
           </Typography>
 
           <Typography
@@ -402,9 +402,9 @@ export default function PokemonList() {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  {t('heroTitleHighlight', { count: total })}
+                  {t('heroTitleHighlight', { count: formatCount(total, language) })}
                 </Box>{' '}
-                {t('heroTitleAfter')}
+                {t(isFallback ? 'heroTitleAfterKanto' : 'heroTitleAfter')}
               </>
             ) : (
               t('heroTitleFallback')
@@ -429,7 +429,7 @@ export default function PokemonList() {
               {t('randomPokemon')}
             </Box>
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 4 }}>
-              <HeroStat value={total || '—'} label={t('statPokemon')} />
+              <HeroStat value={total ? formatCount(total, language) : '—'} label={t('statPokemon')} />
               <HeroStat value={types.length} label={t('statTypes')} />
               <HeroStat value={favorites.length} label={t('statFavorites')} />
             </Box>
@@ -438,6 +438,31 @@ export default function PokemonList() {
 
         {featured && <FeaturedPokemon pokemon={featured} />}
       </Box>
+
+      {isFallback && (
+        <Box
+          role="status"
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+            mb: 2.5,
+            p: 2,
+            pl: 2.5,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--accent-soft)',
+            border: '1px solid color-mix(in srgb, var(--accent) 40%, transparent)',
+          }}
+        >
+          <Typography sx={{ fontSize: '0.92rem', fontWeight: 500 }}>{t('kantoFallback')}</Typography>
+          <Box component="button" type="button" onClick={refetch} sx={pillButtonSx}>
+            <RefreshIcon />
+            {t('retry')}
+          </Box>
+        </Box>
+      )}
 
       <AdvancedSearch />
 
@@ -457,9 +482,9 @@ export default function PokemonList() {
           {!loading && !error && (
             <>
               <Box component="strong" sx={{ color: 'var(--text)', fontWeight: 700 }}>
-                {t(count > 1 ? 'resultsMany' : 'resultsOne', { count })}
+                {t(count > 1 ? 'resultsMany' : 'resultsOne', { count: formatCount(count, language) })}
               </Box>
-              {count !== total && ` ${t('resultsOf', { total })}`}
+              {count !== total && ` ${t('resultsOf', { total: formatCount(total, language) })}`}
             </>
           )}
         </Typography>

@@ -9,25 +9,21 @@ import { flattenEvolutionStages } from '../../api/pokeapi.js';
 import { usePokemon } from '../../context/PokemonContext.jsx';
 import { useTranslation } from '../../i18n/translations.js';
 import { getTypeColor } from '../../Theme/typeColors.js';
-import { formatId, formatSlug, getPokemonName } from '../../utils/pokemon.js';
-
-const describeCondition = (condition, t) => {
-  if (!condition) return null;
-  if (condition.item) {
-    const key = `evo.items.${condition.item}`;
-    const label = t(key);
-    return label === key ? formatSlug(condition.item) : label;
-  }
-  if (condition.trigger === 'trade') return t('evo.trade');
-  if (condition.minLevel) return t('evo.level', { level: condition.minLevel });
-  if (condition.minHappiness) return t('evo.friendship');
-  return t('evo.special');
-};
+import { describeEvolutionCondition } from '../../utils/evolution.js';
+import { formatId, getPokemonName } from '../../utils/pokemon.js';
 
 function EvolutionNode({ pokemon, condition, isCurrent }) {
   const { t, language } = useTranslation();
+  const { getPokemonById } = usePokemon();
   const name = getPokemonName(pokemon, language);
-  const conditionLabel = describeCondition(condition, t);
+  const conditionLabels = describeEvolutionCondition(condition, {
+    t,
+    language,
+    getSpeciesName: (id) => {
+      const species = getPokemonById(id);
+      return species ? getPokemonName(species, language) : null;
+    },
+  });
 
   return (
     <Box
@@ -58,31 +54,42 @@ function EvolutionNode({ pokemon, condition, isCurrent }) {
         },
       }}
     >
+      {/* Les conditions poussent l'illustration vers le bas : les Pokémon d'une
+          même étape restent alignés, quel que soit le nombre de conditions. */}
       <Box
         sx={{
+          flex: '1 0 auto',
           minHeight: 24,
           mb: 0.75,
           display: 'flex',
-          alignItems: 'center',
+          flexWrap: 'wrap',
+          alignItems: 'flex-end',
+          alignContent: 'flex-end',
+          justifyContent: 'center',
+          gap: '4px',
         }}
       >
-        {conditionLabel && (
+        {conditionLabels.map((label) => (
           <Box
             component="span"
+            key={label}
             sx={{
+              maxWidth: '100%',
               px: 1.1,
               py: '3px',
-              borderRadius: 999,
+              borderRadius: '12px',
               background: 'var(--surface-3)',
               color: 'var(--text-muted)',
               fontSize: '0.7rem',
               fontWeight: 600,
-              whiteSpace: 'nowrap',
+              lineHeight: 1.3,
+              textAlign: 'center',
+              overflowWrap: 'anywhere',
             }}
           >
-            {conditionLabel}
+            {label}
           </Box>
-        )}
+        ))}
       </Box>
       <PokemonArtwork pokemon={pokemon} alt="" sx={{ width: { xs: 76, sm: 108 } }} />
       <Typography
@@ -110,10 +117,15 @@ export default function EvolutionCard({ pokemon, evolution, sx }) {
   const { t } = useTranslation();
   const { getPokemonById } = usePokemon();
 
+  // Avec le Pokédex complet, toute la chaîne est connue. Le filtre ne joue qu'en
+  // mode dégradé (liste limitée à Kanto), où l'on ne peut ni nommer ni ouvrir
+  // les Pokémon des autres générations.
   const stages = useMemo(
     () => (evolution ? flattenEvolutionStages(evolution, (id) => Boolean(getPokemonById(id))) : []),
     [evolution, getPokemonById]
   );
+  const chainSize = useMemo(() => (evolution ? flattenEvolutionStages(evolution).flat().length : 0), [evolution]);
+  const shownSize = stages.flat().length;
 
   let body;
   if (evolution === undefined) {
@@ -127,7 +139,9 @@ export default function EvolutionCard({ pokemon, evolution, sx }) {
   } else if (evolution === null) {
     body = <Typography sx={mutedTextSx}>{t('detailsUnavailableDesc')}</Typography>;
   } else if (stages.length <= 1) {
-    body = <Typography sx={mutedTextSx}>{t('noEvolution')}</Typography>;
+    body = (
+      <Typography sx={mutedTextSx}>{t(shownSize < chainSize ? 'evolutionOutsideList' : 'noEvolution')}</Typography>
+    );
   } else {
     body = (
       <Box
@@ -149,7 +163,19 @@ export default function EvolutionCard({ pokemon, evolution, sx }) {
             {stageIndex > 0 && (
               <EastIcon aria-hidden="true" sx={{ flexShrink: 0, color: 'var(--text-faint)', fontSize: { xs: 18, sm: 24 } }} />
             )}
-            <Box sx={{ display: 'flex', alignItems: 'stretch', gap: { xs: 0.5, sm: 1 }, flexShrink: 0 }}>
+            {/* Étapes très ramifiées (Évoli) : plusieurs lignes plutôt qu'un long ruban. */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: `repeat(${Math.min(stage.length, 2)}, auto)`,
+                  sm: `repeat(${Math.min(stage.length, 4)}, auto)`,
+                },
+                alignItems: 'stretch',
+                gap: { xs: 0.5, sm: 1 },
+                flexShrink: 0,
+              }}
+            >
               {stage.map((entry) => (
                 <EvolutionNode
                   key={entry.id}

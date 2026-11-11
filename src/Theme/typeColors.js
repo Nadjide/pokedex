@@ -22,8 +22,7 @@ export const typeColors = {
 
 const FALLBACK_COLOR = '#A8A77A';
 
-// Libellés de secours quand types.json n'est pas (encore) chargé ou ne
-// connaît pas le type (ex. « dark », absent du jeu de données Kanto).
+// Libellés des 18 types (`typesData`, s'il est fourni, reste prioritaire).
 export const typeLabels = {
   normal: { fr: 'Normal', en: 'Normal' },
   fire: { fr: 'Feu', en: 'Fire' },

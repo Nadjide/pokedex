@@ -53,6 +53,7 @@ export function filterAndSortPokemons(
   {
     searchTerm = '',
     activeTypeFilters = [],
+    activeGenerationFilters = [],
     favoritesOnly = false,
     sortOrder = 'id-asc',
     favorites = [],
@@ -65,6 +66,8 @@ export function filterAndSortPokemons(
     .filter((pokemon) => {
       if (!matchesSearch(pokemon, term)) return false;
       if (favoritesOnly && !favorites.includes(pokemon.id)) return false;
+      // Générations cumulées en OU : un Pokémon n'appartient qu'à une seule.
+      if (activeGenerationFilters.length > 0 && !activeGenerationFilters.includes(pokemon.generation)) return false;
       // Types cumulés (ET logique) : le Pokémon doit posséder tous les types choisis.
       return activeTypeFilters.every((type) => pokemon.types?.includes(type));
     })
