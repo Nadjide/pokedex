@@ -16,6 +16,7 @@ import { getTypeColor } from '../../Theme/typeColors.js';
 import { formatHeight, formatId, formatSlug, formatWeight, getPokemonName } from '../../utils/pokemon.js';
 import SimilarPokemon from '../SimilarPokemon/SimilarPokemon';
 import CompareButton from '../../components/CompareButton.jsx';
+import TeamButton from '../../components/TeamButton.jsx';
 import FavoriteButton, { pillButtonSx } from '../../components/FavoriteButton.jsx';
 import PokemonArtwork from '../../components/PokemonArtwork.jsx';
 import PokeballMark from '../../components/PokeballMark.jsx';
@@ -366,6 +367,7 @@ export default function PokemonDetail() {
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, mt: 3.5 }}>
             <FavoriteButton pokemonId={pokemon.id} variant="pill" />
             <CompareButton pokemon={pokemon} />
+            <TeamButton pokemonId={pokemon.id} />
             <Box
               component="button"
               type="button"

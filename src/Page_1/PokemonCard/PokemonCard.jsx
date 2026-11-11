@@ -10,6 +10,7 @@ import PokemonArtwork from '../../components/PokemonArtwork.jsx';
 import TypeBadge from '../../components/TypeBadge.jsx';
 import FavoriteButton from '../../components/FavoriteButton.jsx';
 import CompareButton from '../../components/CompareButton.jsx';
+import TeamButton from '../../components/TeamButton.jsx';
 import PokeballMark from '../../components/PokeballMark.jsx';
 
 // Les couleurs du type arrivent par variables CSS (--type, --type-2) : le style
@@ -46,10 +47,17 @@ const cardSx = {
     opacity: 0.2,
   },
 
-  // Sur les appareils à pointeur, « Comparer » n'apparaît qu'au survol ou au focus.
+  // Sur les appareils à pointeur, « Comparer » et « Équipe » n'apparaissent qu'au
+  // survol ou au focus (ils restent visibles une fois activés).
   '@media (hover: hover)': {
-    '& .card-compare:not([aria-pressed="true"])': { opacity: 0, transform: 'translateX(6px)' },
-    '&:hover .card-compare, &:focus-within .card-compare': { opacity: 1, transform: 'none' },
+    '& .card-compare:not([aria-pressed="true"]), & .card-team:not([aria-pressed="true"])': {
+      opacity: 0,
+      transform: 'translateX(6px)',
+    },
+    '&:hover .card-compare, &:focus-within .card-compare, &:hover .card-team, &:focus-within .card-team': {
+      opacity: 1,
+      transform: 'none',
+    },
   },
 
   // Lien étiré : toute la carte est cliquable, les boutons restent au-dessus.
@@ -147,6 +155,7 @@ function PokemonCard({ pokemon, index = 0 }) {
       >
         <FavoriteButton pokemonId={pokemon.id} />
         <CompareButton pokemon={pokemon} variant="icon" className="card-compare" />
+        <TeamButton pokemonId={pokemon.id} variant="icon" className="card-team" />
       </Box>
 
       <Box sx={artZoneSx}>

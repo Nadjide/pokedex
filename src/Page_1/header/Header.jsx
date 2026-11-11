@@ -5,8 +5,10 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import GroupsIcon from '@mui/icons-material/Groups';
 import { LanguageContext } from '../../Langue/LanguageContext.jsx';
 import { useFavorites } from '../../FavoritesContext.jsx';
+import { useTeam } from '../../TeamContext.jsx';
 import { useFilter } from '../../components/FilterShield/FilterContext.jsx';
 import { useThemeMode } from '../../Theme/ThemeModeContext.jsx';
 import { useTranslation } from '../../i18n/translations.js';
@@ -31,6 +33,7 @@ const iconButtonSx = {
 export default function Header() {
   const { language, setLanguage } = useContext(LanguageContext);
   const { favorites } = useFavorites();
+  const { team, maxSize } = useTeam();
   const { favoritesOnly, setFavoritesOnly } = useFilter();
   const { mode, toggleMode } = useThemeMode();
   const { t } = useTranslation();
@@ -38,6 +41,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   const onHome = location.pathname === '/';
+  const onTeam = location.pathname === '/team';
   const favoritesActive = onHome && favoritesOnly;
 
   const handleFavorites = () => {
@@ -71,7 +75,7 @@ export default function Header() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 2,
+          gap: { xs: 1, sm: 2 },
         }}
       >
         <Box
@@ -97,6 +101,8 @@ export default function Header() {
               fontWeight: 800,
               fontSize: '1.35rem',
               letterSpacing: '-0.01em',
+              // Sur les téléphones étroits, le logo seul laisse la place aux actions.
+              '@media (max-width: 419.95px)': { display: 'none' },
             }}
           >
             Poké
@@ -128,6 +134,40 @@ export default function Header() {
                 sx={{ '& .MuiBadge-badge': { fontWeight: 700, fontSize: '0.65rem', minWidth: 17, height: 17 } }}
               >
                 {favoritesActive ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+              </Badge>
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={t('team.title')}>
+            <IconButton
+              component={Link}
+              to="/team"
+              aria-label={`${t('team.title')} (${team.length}/${maxSize})`}
+              aria-current={onTeam ? 'page' : undefined}
+              sx={{
+                ...iconButtonSx,
+                ...(onTeam && {
+                  color: 'var(--team)',
+                  borderColor: 'var(--team)',
+                  background: 'var(--team-soft)',
+                }),
+              }}
+            >
+              <Badge
+                badgeContent={team.length}
+                max={99}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontWeight: 700,
+                    fontSize: '0.65rem',
+                    minWidth: 17,
+                    height: 17,
+                    background: 'var(--team)',
+                    color: 'var(--team-contrast)',
+                  },
+                }}
+              >
+                <GroupsIcon />
               </Badge>
             </IconButton>
           </Tooltip>
