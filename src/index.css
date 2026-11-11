@@ -26,6 +26,13 @@
   --compare: #4cc9f0;
   --compare-soft: rgba(76, 201, 240, 0.16);
   --star: #f7b955;
+  --team: #b197fc;
+  --team-soft: rgba(177, 151, 252, 0.16);
+  --team-contrast: #0b1220;
+  /* Analyse d'équipe : membres faibles / résistants face à un type */
+  --weak: #f0616d;
+  --weak-contrast: #15171f;
+  --resist: #6fcf5f;
 
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 14px 34px -12px rgba(0, 0, 0, 0.6);
@@ -66,6 +73,12 @@
   --compare: #0f8fbf;
   --compare-soft: rgba(15, 143, 191, 0.12);
   --star: #e79a1c;
+  --team: #6c4fd3;
+  --team-soft: rgba(108, 79, 211, 0.12);
+  --team-contrast: #ffffff;
+  --weak: #cf3545;
+  --weak-contrast: #ffffff;
+  --resist: #2e8b3d;
 
   --shadow-sm: 0 2px 8px rgba(24, 32, 64, 0.07);
   --shadow-md: 0 14px 34px -14px rgba(24, 32, 64, 0.22);

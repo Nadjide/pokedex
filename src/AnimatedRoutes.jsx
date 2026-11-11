@@ -11,6 +11,7 @@ import { pillButtonSx } from './components/FavoriteButton.jsx';
 import { useTranslation } from './i18n/translations.js';
 
 const PokemonDetail = lazy(() => import('./Page_2/PokemonDetails/PokemonDetail.jsx'));
+const TeamPage = lazy(() => import('./Page_3/Team/TeamPage.jsx'));
 
 function NotFoundPage() {
   const { t } = useTranslation();
@@ -85,6 +86,16 @@ const AnimatedRoutes = () => {
             <TransitionLayout>
               <Suspense fallback={<RouteFallback />}>
                 <PokemonDetail />
+              </Suspense>
+            </TransitionLayout>
+          }
+        />
+        <Route
+          path="/team"
+          element={
+            <TransitionLayout>
+              <Suspense fallback={<RouteFallback />}>
+                <TeamPage />
               </Suspense>
             </TransitionLayout>
           }

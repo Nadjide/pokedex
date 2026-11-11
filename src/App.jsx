@@ -9,6 +9,7 @@ import { PokemonProvider } from './context/PokemonContext.jsx';
 import { TypesProvider } from './Page_1/TypesContext/TypesContext.jsx';
 import { FilterProvider } from './components/FilterShield/FilterContext.jsx';
 import { ComparisonProvider } from './Comparison/ComparisonContext.jsx';
+import { TeamProvider } from './TeamContext.jsx';
 import ComparisonDock from './components/ComparisonDock/ComparisonDock.jsx';
 import AnimatedRoutes from './AnimatedRoutes.jsx';
 import { useTranslation } from './i18n/translations.js';
@@ -40,9 +41,11 @@ function App() {
             <TypesProvider>
               <FilterProvider>
                 <ComparisonProvider>
-                  <Router>
-                    <AppShell />
-                  </Router>
+                  <TeamProvider>
+                    <Router>
+                      <AppShell />
+                    </Router>
+                  </TeamProvider>
                 </ComparisonProvider>
               </FilterProvider>
             </TypesProvider>

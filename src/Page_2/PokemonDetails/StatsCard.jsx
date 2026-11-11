@@ -6,9 +6,9 @@ import { STAT_KEYS } from '../../api/pokeapi.js';
 import { useTranslation } from '../../i18n/translations.js';
 
 // Échelle visuelle : rares sont les stats au-delà de 180, la barre plafonne ensuite.
-const BAR_SCALE = 180;
+export const BAR_SCALE = 180;
 
-const statTierColor = (value) => {
+export const statTierColor = (value) => {
   if (value < 50) return '#f0616d';
   if (value < 75) return '#f59f45';
   if (value < 100) return '#eec23a';
