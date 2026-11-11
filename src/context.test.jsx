@@ -68,6 +68,7 @@ describe('FilterContext', () => {
     expect(result.current.activeTypeFilters).toContain('grass');
 
     act(() => {
+      result.current.toggleGenerationFilter(3);
       result.current.setSearchTerm('Pikachu');
       result.current.setSortOrder('name-asc');
     });
@@ -78,8 +79,26 @@ describe('FilterContext', () => {
       result.current.clearFilters();
     });
     expect(result.current.activeTypeFilters).toHaveLength(0);
+    expect(result.current.activeGenerationFilters).toHaveLength(0);
     expect(result.current.searchTerm).toBe('');
     expect(result.current.sortOrder).toBe('id-asc');
+  });
+
+  test('offers the 18 types and nine generations, and toggles generations freely', () => {
+    const wrapper = ({ children }) => <FilterProvider>{children}</FilterProvider>;
+    const { result } = renderHook(() => useFilter(), { wrapper });
+
+    expect(result.current.types).toHaveLength(18);
+    expect(result.current.types).toContain('dark');
+    expect(result.current.generations).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    act(() => result.current.toggleGenerationFilter(9));
+    act(() => result.current.toggleGenerationFilter(2));
+    act(() => result.current.toggleGenerationFilter(5));
+    expect(result.current.activeGenerationFilters).toEqual([2, 5, 9]);
+
+    act(() => result.current.toggleGenerationFilter(5));
+    expect(result.current.activeGenerationFilters).toEqual([2, 9]);
   });
 
   test('keeps at most two type filters, dropping the oldest', () => {

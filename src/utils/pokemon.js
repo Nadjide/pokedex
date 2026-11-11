@@ -6,7 +6,16 @@ export const getArtworkUrl = (id, { shiny = false } = {}) =>
 
 export const getSpriteUrl = (id) => `${SPRITES_BASE}/${id}.png`;
 
-export const formatId = (id) => `#${String(id).padStart(3, '0')}`;
+// Quatre chiffres : le Pokédex national dépasse 1 000 entrées.
+export const formatId = (id) => `#${String(id).padStart(4, '0')}`;
+
+// « 1 025 » en français, « 1,025 » en anglais.
+export const formatCount = (value, language = 'fr') =>
+  Number(value).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US');
+
+export const GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+export const toRoman = (generation) => ROMAN_NUMERALS[generation - 1] || String(generation);
 
 export const getPokemonName = (pokemon, language = 'fr') =>
   pokemon?.names?.[language] || pokemon?.names?.fr || pokemon?.names?.en || formatId(pokemon?.id ?? 0);

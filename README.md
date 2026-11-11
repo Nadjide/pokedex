@@ -75,8 +75,10 @@ npm install
 
 | Source | Contenu |
 | :--- | :--- |
-| `pokedex-jgabriele.vercel.app` | Liste des 151 Pokémon de Kanto (noms multilingues, types, taille, poids, capacités) et traductions des types. |
-| [PokéAPI](https://pokeapi.co/) | Statistiques de base, talents, descriptions, chaînes d'évolution, cris. |
+| [PokéAPI GraphQL](https://graphql.pokeapi.co/v1beta2) | Liste des 1 025 Pokémon (générations I à IX) en une requête : noms fr/en/ja, types, taille, poids, génération. Mise en cache dans `localStorage`. |
+| [PokéAPI](https://pokeapi.co/) | Statistiques de base, talents, capacités, descriptions, chaînes d'évolution, cris. |
+| CSV PokéAPI (GitHub `PokeAPI/pokeapi`) | Repli complet (1 025 Pokémon) si l'API GraphQL échoue ou tarde. |
+| `pokedex-jgabriele.vercel.app` | Dernier recours : liste limitée aux 151 Pokémon de Kanto. |
 | Sprites PokéAPI (GitHub) | Illustrations officielles (normales et chromatiques). |
 
 Si PokéAPI est injoignable, la fiche reste consultable : les blocs concernés affichent « indisponible » avec un bouton pour réessayer.

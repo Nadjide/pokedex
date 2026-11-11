@@ -2,13 +2,21 @@ import React, { useMemo, useState } from 'react';
 import { Box, InputBase, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SectionCard, { mutedTextSx } from './SectionCard.jsx';
+import { Shimmer } from '../../Page_1/PokemonCard/PokemonCardSkeleton.jsx';
+import { usePokemonMoves } from '../../hooks/usePokemonMoves.js';
 import { useTranslation } from '../../i18n/translations.js';
 import { formatSlug, normalizeText } from '../../utils/pokemon.js';
 
 const INITIAL_COUNT = 24;
 
-export default function MovesCard({ moves = [], sx }) {
+const EMPTY = [];
+
+// Les capacités ne font plus partie de la liste : elles sont demandées à PokéAPI
+// à l'ouverture de la fiche.
+export default function MovesCard({ pokemonId, sx }) {
   const { t } = useTranslation();
+  const loaded = usePokemonMoves(pokemonId);
+  const moves = loaded || EMPTY;
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(false);
 
@@ -21,7 +29,7 @@ export default function MovesCard({ moves = [], sx }) {
 
   return (
     <SectionCard
-      title={`${t('moves')} (${labels.length})`}
+      title={loaded ? `${t('moves')} (${labels.length})` : t('moves')}
       hint={t('movesNote')}
       sx={sx}
       action={
@@ -59,8 +67,16 @@ export default function MovesCard({ moves = [], sx }) {
         )
       }
     >
-      {visible.length === 0 ? (
-        <Typography sx={mutedTextSx}>{t('noMoveFound')}</Typography>
+      {loaded === undefined ? (
+        <Box aria-busy="true" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {[92, 120, 78, 104, 132, 86, 110, 96].map((width, i) => (
+            <Shimmer key={i} sx={{ width, height: 32, borderRadius: 999 }} />
+          ))}
+        </Box>
+      ) : loaded === null ? (
+        <Typography sx={mutedTextSx}>{t('movesUnavailable')}</Typography>
+      ) : visible.length === 0 ? (
+        <Typography sx={mutedTextSx}>{t(labels.length === 0 ? 'noMoves' : 'noMoveFound')}</Typography>
       ) : (
         <Box component="ul" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, m: 0, p: 0, listStyle: 'none' }}>
           {visible.map((label) => (

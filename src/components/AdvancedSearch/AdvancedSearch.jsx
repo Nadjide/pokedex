@@ -1,5 +1,5 @@
 // src/components/AdvancedSearch/AdvancedSearch.jsx
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, ButtonBase, Divider, IconButton, InputBase, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -10,10 +10,12 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useFilter } from '../FilterShield/FilterContext.jsx';
 import { useFavorites } from '../../FavoritesContext.jsx';
+import { usePokemon } from '../../context/PokemonContext.jsx';
 import { TypesContext } from '../../Page_1/TypesContext/TypesContext.jsx';
 import { getReadableTextColor, getTypeColor, getTypeLabel } from '../../Theme/typeColors.js';
 import { SORT_ORDERS } from '../../utils/filterPokemons.js';
 import { useTranslation } from '../../i18n/translations.js';
+import { toRoman } from '../../utils/pokemon.js';
 import TypeIcon from '../TypeIcon.jsx';
 
 const isTypingTarget = (target) =>
@@ -79,11 +81,24 @@ const typeChipSx = {
   },
 };
 
+const chipRowSx = {
+  display: 'flex',
+  gap: 1,
+  py: 0.5,
+  flexWrap: { xs: 'nowrap', md: 'wrap' },
+  overflowX: { xs: 'auto', md: 'visible' },
+  mx: { xs: -2, md: 0 },
+  px: { xs: 2, md: 0 },
+};
+
 const AdvancedSearch = () => {
   const {
     types,
     activeTypeFilters,
     toggleTypeFilter,
+    generations,
+    activeGenerationFilters,
+    toggleGenerationFilter,
     searchTerm,
     setSearchTerm,
     sortOrder,
@@ -92,6 +107,13 @@ const AdvancedSearch = () => {
     setFavoritesOnly,
   } = useFilter();
   const { favorites } = useFavorites();
+  const { pokemons } = usePokemon();
+  // Seules les générations réellement chargées sont proposées (une seule en
+  // mode dégradé : le filtre n'a alors pas lieu d'être).
+  const availableGenerations = useMemo(() => {
+    const present = new Set(pokemons.map((pokemon) => pokemon.generation));
+    return generations.filter((generation) => present.has(generation));
+  }, [pokemons, generations]);
   const { t, language } = useTranslation();
   const typesData = useContext(TypesContext) || {};
   const inputRef = useRef(null);
@@ -283,21 +305,47 @@ const AdvancedSearch = () => {
         </Box>
       </Box>
 
+      {/* Filtres par génération (cumulables) */}
+      {availableGenerations.length > 1 && (
+        <Box
+          role="group"
+          aria-label={t('filterByGeneration')}
+          className="no-scrollbar"
+          style={{ '--type': 'var(--accent)', '--type-text': '#ffffff' }}
+          sx={{ ...chipRowSx, mt: 2 }}
+        >
+          {availableGenerations.map((generation) => {
+            const roman = toRoman(generation);
+            return (
+              <Box
+                key={generation}
+                component="button"
+                type="button"
+                onClick={() => toggleGenerationFilter(generation)}
+                aria-pressed={activeGenerationFilters.includes(generation)}
+                aria-label={`${t('generation', { roman })} · ${t(`regions.${generation}`)}`}
+                sx={typeChipSx}
+              >
+                <Box
+                  component="span"
+                  className="type-dot"
+                  sx={{ fontFamily: 'var(--font-display)', fontSize: '0.68rem', fontWeight: 700, lineHeight: 1 }}
+                >
+                  {roman}
+                </Box>
+                {t(`regions.${generation}`)}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
       {/* Filtres par type : défilement horizontal sur mobile, retour à la ligne au-delà */}
       <Box
         role="group"
         aria-label={`${t('filterByTypes')} (${t('filterByTypesHint')})`}
         className="no-scrollbar"
-        sx={{
-          display: 'flex',
-          gap: 1,
-          mt: 2,
-          py: 0.5,
-          flexWrap: { xs: 'nowrap', md: 'wrap' },
-          overflowX: { xs: 'auto', md: 'visible' },
-          mx: { xs: -2, md: 0 },
-          px: { xs: 2, md: 0 },
-        }}
+        sx={{ ...chipRowSx, mt: availableGenerations.length > 1 ? 0.75 : 2 }}
       >
         {types.map((type) => {
           const color = getTypeColor(type);

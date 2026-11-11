@@ -547,7 +547,7 @@ export default function PokemonDetail() {
           evolution={details.loading ? undefined : details.species ? details.evolution : null}
           sx={{ gridColumn: '1 / -1' }}
         />
-        <MovesCard moves={pokemon.moves || []} sx={{ gridColumn: '1 / -1' }} />
+        <MovesCard pokemonId={pokemon.id} sx={{ gridColumn: '1 / -1' }} />
       </Box>
 
       <SimilarPokemon pokemon={pokemon} />
