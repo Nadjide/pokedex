@@ -1,5 +1,9 @@
 // Accès à PokéAPI pour les données absentes du jeu de données principal :
-// statistiques de base, talents, description du Pokédex, chaîne d'évolution.
+// statistiques de base, talents, description du Pokédex, chaîne d'évolution,
+// détails des capacités.
+import { createLimiter } from '../utils/limiter.js';
+import { MOVE_CATEGORIES } from '../utils/moves.js';
+
 const API_BASE = 'https://pokeapi.co/api/v2';
 
 export const STAT_KEYS = ['hp', 'attack', 'defense', 'special-attack', 'special-defense', 'speed'];
@@ -8,7 +12,9 @@ export const STAT_KEYS = ['hp', 'attack', 'defense', 'special-attack', 'special-
 // session, y compris quand deux composants la réclament en parallèle.
 const requestCache = new Map();
 
-function fetchJson(url) {
+// `select` réduit la réponse avant sa mise en cache, pour ne pas garder en
+// mémoire des charges utiles volumineuses dont on n'utilise que quelques champs.
+function fetchJson(url, select) {
   if (requestCache.has(url)) return requestCache.get(url);
 
   const request = fetch(url)
@@ -16,6 +22,7 @@ function fetchJson(url) {
       if (!res.ok) throw new Error(`PokéAPI ${res.status}`);
       return res.json();
     })
+    .then((data) => (select ? select(data) : data))
     .catch((err) => {
       // On n'enferme pas un échec dans le cache : un nouvel essai reste possible.
       requestCache.delete(url);
@@ -86,6 +93,52 @@ export async function getAbility(url) {
     names: pickByLanguage(data.names, 'name'),
     description: pickByLanguage(data.flavor_text_entries, 'flavor_text'),
   };
+}
+
+const numberOrNull = (value) => (typeof value === 'number' ? value : null);
+
+// Réponse de /move/{slug} réduite aux champs affichés. `power` et `accuracy`
+// valent null quand la capacité n'en a pas (statut, puissance variable,
+// capacité qui ne peut pas échouer).
+export function mapMove(data, slug) {
+  if (!data?.type?.name) throw new Error('PokéAPI: capacité incomplète');
+
+  const category = data.damage_class?.name;
+
+  return {
+    slug: slug || data.name,
+    names: pickByLanguage(data.names, 'name'),
+    type: data.type.name,
+    category: MOVE_CATEGORIES.includes(category) ? category : null,
+    power: numberOrNull(data.power),
+    accuracy: numberOrNull(data.accuracy),
+    pp: numberOrNull(data.pp),
+    description: pickByLanguage(data.flavor_text_entries, 'flavor_text'),
+  };
+}
+
+// Un Pokémon connaît des dizaines de capacités : leurs fiches passent par une
+// file d'attente pour ne jamais lancer plus de quelques requêtes à la fois.
+const MOVE_CONCURRENCY = 6;
+const limitMoveRequests = createLimiter(MOVE_CONCURRENCY);
+const loadedMoves = new Map();
+
+// Détails déjà chargés pendant la session (undefined sinon), sans requête.
+export const peekMove = (slug) => loadedMoves.get(slug);
+
+// `signal` annulé : la requête est retirée de la file si elle n'a pas démarré.
+export function getMove(slug, { signal } = {}) {
+  const url = `${API_BASE}/move/${slug}`;
+  const load = () => fetchJson(url, (data) => mapMove(data, slug));
+
+  // Déjà demandée : on partage la réponse (ou la requête en cours) sans
+  // reprendre de place dans la file.
+  const request = requestCache.has(url) ? load() : limitMoveRequests(load, { signal });
+
+  return request.then((move) => {
+    loadedMoves.set(slug, move);
+    return move;
+  });
 }
 
 const mapEvolutionNode = (node) => {
